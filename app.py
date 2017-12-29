@@ -11,6 +11,7 @@ import codecs
 import datetime
 import os.path
 import json
+from random import randint
 # from instagram_private_api import Client, ClientCompatPatch
 try:
     from instagram_private_api import (
@@ -102,7 +103,7 @@ else:
 ### configure CS50 Library to use SQLite database
 # db = SQL("sqlite:///" + THIS_FOLDER_G + "/db/system.db")
 
-
+# --- Helper Functions for instagram Login
 def to_json(python_object):
     if isinstance(python_object, bytes):
         return {'__class__': 'bytes',
@@ -158,9 +159,11 @@ def ig_login(username, password):
     except ClientLoginError as e:
         print('ClientLoginError {0!s}'.format(e))
         return {"status": "error", "msg": "ClientLoginError"}
+
     except ClientError as e:
         print('ClientError {0!s} (Code: {1:d}, Response: {2!s})'.format(e.msg, e.code, e.error_response))
         return {"status": "error", "msg": "ClientError"}
+
     except Exception as e:
         print('Unexpected Exception: {0!s}'.format(e))
         return {"status": "error", "msg": "UnknownException"}
@@ -168,10 +171,6 @@ def ig_login(username, password):
     # Show when login expires
     cookie_expiry = api.cookie_jar.expires_earliest
     print('Cookie Expiry: {0!s}'.format(datetime.datetime.fromtimestamp(cookie_expiry).strftime('%Y-%m-%dT%H:%M:%SZ')))
-
-    # Call the api
-    # results = api.tag_search('cats')
-    # assert len(results.get('results', [])) > 0
 
     # print('All ok')
     return api
@@ -356,8 +355,44 @@ def unfollowuser():
 
         return jsonify(unfollow_user)
 
+@app.route('/establishencryption', methods=["POST"])
+def establishencryption():
+    global THIS_FOLDER_G
+    try:
+        _N = int(request.form.get('_N'))
+        _G = int(request.form.get('_G'))
+        _X = int(request.form.get('_X'))
+        _ID = str(request.form.get('_ID'))
 
-# __TODO__ update saved data with new data
+        _B = randint(100, 500);
+        _Y = pow(_G, _B) % (_N);
+
+        xb = pow(_X, _B) % (_N);
+        
+        SEC_KEY = xb
+        
+        print(_ID)
+        print(SEC_KEY)
+
+        DB_ENTRY = {_ID: SEC_KEY}
+        DB_PATH = THIS_FOLDER_G + "/db/__keys__.json"
+        
+        with open(DB_PATH, 'r') as infile:
+            DB_ENTRIES = json.load(infile)
+        
+        DB_ENTRIES[_ID] = str(SEC_KEY)
+        
+        with open(DB_PATH, 'w') as outfile:
+            json.dump(DB_ENTRIES, outfile, indent=2)
+
+        return jsonify({"status": "ok", "y": str(_Y)})
+
+    except Exception as e:
+        return jsonify({"status": "error", "msg": "Somewthing Went Wrong. Please try again."})
+
+
+
+# __TODO__ update and replace saved data with new data
 
 # __TODO__ clear my data / logout completely
 
