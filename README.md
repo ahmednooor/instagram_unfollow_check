@@ -39,3 +39,9 @@ data should be sent in POST method
 > unfollow a user
 
 > recieves `username`, `password` and `other_user_id` variables in formdata.
+
+---
+
+##### `instagram private api link`
+
+> [https://github.com/ping/instagram_private_api](https://github.com/ping/instagram_private_api)
