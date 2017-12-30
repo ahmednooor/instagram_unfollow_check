@@ -1,0 +1,4 @@
+Flask==0.12.2
+flask_compress==1.4.0
+passlib==1.7.1
+SQLAlchemy==1.2.0

@@ -12,6 +12,7 @@ import datetime
 import os.path
 import json
 from random import randint
+
 # from instagram_private_api import Client, ClientCompatPatch
 try:
     from instagram_private_api import (
@@ -20,11 +21,13 @@ try:
         __version__ as client_version)
 except ImportError:
     import sys
+
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from instagram_private_api import (
         Client, ClientError, ClientLoginError,
         ClientCookieExpiredError, ClientLoginRequiredError,
         __version__ as client_version)
+
 
 ### CS50 wrapper for SQLAlchemy
 class SQL(object):
@@ -83,6 +86,7 @@ Compress(app)
 
 app.secret_key = uuid.uuid4().hex
 
+
 ### Convert string to int type possibility confirmation
 def RepresentsInt(s):
     try:
@@ -90,6 +94,7 @@ def RepresentsInt(s):
         return True
     except ValueError:
         return False
+
 
 ### configure root directory path relative to this file
 THIS_FOLDER_G = ""
@@ -99,6 +104,7 @@ if getattr(sys, 'frozen', False):
 else:
     # unfrozen
     THIS_FOLDER_G = os.path.dirname(os.path.realpath(__file__))
+
 
 ### configure CS50 Library to use SQLite database
 # db = SQL("sqlite:///" + THIS_FOLDER_G + "/db/system.db")
@@ -110,16 +116,19 @@ def to_json(python_object):
                 '__value__': codecs.encode(python_object, 'base64').decode()}
     raise TypeError(repr(python_object) + ' is not JSON serializable')
 
+
 def from_json(json_object):
     if '__class__' in json_object and json_object['__class__'] == 'bytes':
         return codecs.decode(json_object['__value__'].encode(), 'base64')
     return json_object
+
 
 def onlogin_callback(api, new_settings_file):
     cache_settings = api.settings
     with open(new_settings_file, 'w') as outfile:
         json.dump(cache_settings, outfile, default=to_json)
         print('SAVED: {0!s}'.format(new_settings_file))
+
 
 def ig_login(username, password):
     global THIS_FOLDER_G
@@ -202,6 +211,7 @@ def login():
 
         return jsonify(current_user)
 
+
 @app.route('/followers', methods=["POST"])
 def followers():
     username = request.form.get('username')
@@ -227,6 +237,7 @@ def followers():
         followers["users"] = sorted(followers["users"], key=lambda k: k['full_name'])
         return jsonify(followers)
 
+
 @app.route('/following', methods=["POST"])
 def following():
     username = request.form.get('username')
@@ -251,6 +262,7 @@ def following():
 
         following["users"] = sorted(following["users"], key=lambda k: k['full_name'])
         return jsonify(following)
+
 
 @app.route('/unfollowers', methods=["POST"])
 def unfollowers():
@@ -319,6 +331,7 @@ def unfollowers():
 
         return jsonify(unfollowers)
 
+
 @app.route('/followuser', methods=["POST"])
 def followuser():
     username = request.form.get('username')
@@ -336,6 +349,7 @@ def followuser():
         follow_user = api.friendships_create(other_user_id)
 
         return jsonify(follow_user)
+
 
 @app.route('/unfollowuser', methods=["POST"])
 def unfollowuser():
@@ -355,6 +369,7 @@ def unfollowuser():
 
         return jsonify(unfollow_user)
 
+
 @app.route('/establishencryption', methods=["POST"])
 def establishencryption():
     global THIS_FOLDER_G
@@ -368,20 +383,20 @@ def establishencryption():
         _Y = pow(_G, _B) % (_N);
 
         xb = pow(_X, _B) % (_N);
-        
+
         SEC_KEY = xb
-        
+
         print(_ID)
         print(SEC_KEY)
 
         DB_ENTRY = {_ID: SEC_KEY}
         DB_PATH = THIS_FOLDER_G + "/db/__keys__.json"
-        
+
         with open(DB_PATH, 'r') as infile:
             DB_ENTRIES = json.load(infile)
-        
+
         DB_ENTRIES[_ID] = str(SEC_KEY)
-        
+
         with open(DB_PATH, 'w') as outfile:
             json.dump(DB_ENTRIES, outfile, indent=2)
 
@@ -389,7 +404,6 @@ def establishencryption():
 
     except Exception as e:
         return jsonify({"status": "error", "msg": "Somewthing Went Wrong. Please try again."})
-
 
 
 # __TODO__ update and replace saved data with new data
