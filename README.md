@@ -1,14 +1,16 @@
 # Instagram Unfollowers
-
 > Find when someone unfollows you on instagram. Make only meaningful connections instead of fake followers.
 
-> Checks who unfollowed you, your followers, your followings, who is not following back.
+> An app to check on instagram, who unfollowed you, your followers, your followings, who is not following back.
 
-# Install Dependancies
-> `pip install -r requirements.txt`
+## Install
+> Clone this repo.
+
+> Execute `pip install -r requirements.txt` in root directory of cloned repo to install dependencies.
+
 > You will need to have installed `Microsoft Visual C++ Build Tools ^14.x` on Windows for `pycryptodome` to install.
 
-# Run
+## Run
 > `python app.py`
 
 ## Client Server Communication
