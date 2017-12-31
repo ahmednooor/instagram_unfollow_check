@@ -1,27 +1,25 @@
 ### Imports
-from flask import Flask, flash, redirect, render_template, request, session, url_for, jsonify, g
+from flask import Flask, redirect, render_template, request, session, url_for, jsonify, g
 from flask_compress import Compress
-import sqlalchemy
-# from cs50 import SQL
-from passlib.hash import sha256_crypt
-import operator
-import uuid
-import os, sys
+import os
+import os.path
+import sys
 import codecs
 import datetime
-import os.path
 import json
+import uuid
+import base64
 from random import randint
+from Crypto import Random
+from Crypto.Cipher import AES
+from hashlib import md5
 
-# from instagram_private_api import Client, ClientCompatPatch
 try:
     from instagram_private_api import (
         Client, ClientError, ClientLoginError,
         ClientCookieExpiredError, ClientLoginRequiredError,
         __version__ as client_version)
 except ImportError:
-    import sys
-
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from instagram_private_api import (
         Client, ClientError, ClientLoginError,
@@ -29,71 +27,12 @@ except ImportError:
         __version__ as client_version)
 
 
-### CS50 wrapper for SQLAlchemy
-class SQL(object):
-    """Wrap SQLAlchemy to provide a simple SQL API."""
-
-    def __init__(self, url):
-        """
-        Create instance of sqlalchemy.engine.Engine.
-        URL should be a string that indicates database dialect and connection arguments.
-        http://docs.sqlalchemy.org/en/latest/core/engines.html#sqlalchemy.create_engine
-        """
-        try:
-            self.engine = sqlalchemy.create_engine(url)
-        except Exception as e:
-            raise RuntimeError(e)
-
-    def execute(self, text, *multiparams, **params):
-        """
-        Execute a SQL statement.
-        """
-        try:
-
-            # bind parameters before statement reaches database, so that bound parameters appear in exceptions
-            # http://docs.sqlalchemy.org/en/latest/core/sqlelement.html#sqlalchemy.sql.expression.text
-            # https://groups.google.com/forum/#!topic/sqlalchemy/FfLwKT1yQlg
-            # http://docs.sqlalchemy.org/en/latest/core/connections.html#sqlalchemy.engine.Engine.execute
-            # http://docs.sqlalchemy.org/en/latest/faq/sqlexpressions.html#how-do-i-render-sql-expressions-as-strings-possibly-with-bound-parameters-inlined
-            statement = sqlalchemy.text(text).bindparams(*multiparams, **params)
-            result = self.engine.execute(str(statement.compile(compile_kwargs={"literal_binds": True})))
-
-            # if SELECT (or INSERT with RETURNING), return result set as list of dict objects
-            if result.returns_rows:
-                rows = result.fetchall()
-                return [dict(row) for row in rows]
-
-            # if INSERT, return primary key value for a newly inserted row
-            elif result.lastrowid is not None:
-                return result.lastrowid
-
-            # if DELETE or UPDATE (or INSERT without RETURNING), return number of rows matched
-            else:
-                return result.rowcount
-
-        # if constraint violated, return None
-        except sqlalchemy.exc.IntegrityError:
-            return None
-
-        # else raise error
-        except Exception as e:
-            raise RuntimeError(e)
-
 
 ### configure flask
 app = Flask(__name__)
 Compress(app)
 
 app.secret_key = uuid.uuid4().hex
-
-
-### Convert string to int type possibility confirmation
-def RepresentsInt(s):
-    try:
-        int(s)
-        return True
-    except ValueError:
-        return False
 
 
 ### configure root directory path relative to this file
@@ -106,8 +45,64 @@ else:
     THIS_FOLDER_G = os.path.dirname(os.path.realpath(__file__))
 
 
-### configure CS50 Library to use SQLite database
-# db = SQL("sqlite:///" + THIS_FOLDER_G + "/db/system.db")
+# --- helper function to decrypt data
+def decrypt_data(ciphered_text, _password):
+    """https://stackoverflow.com/questions/36762098/how-to-decrypt-password-from-javascript-cryptojs-aes-encryptpassword-passphras"""
+    BLOCK_SIZE = 16
+    _password = _password.encode()
+
+    def pad(data):
+        length = BLOCK_SIZE - (len(data) % BLOCK_SIZE)
+        return data + (chr(length)*length).encode()
+
+    def unpad(data):
+        return data[:-(data[-1] if type(data[-1]) == int else ord(data[-1]))]
+
+    def bytes_to_key(data, salt, output=48):
+        # extended from https://gist.github.com/gsakkis/4546068
+        assert len(salt) == 8, len(salt)
+        data += salt
+        key = md5(data).digest()
+        final_key = key
+        while len(final_key) < output:
+            key = md5(key + data).digest()
+            final_key += key
+        return final_key[:output]
+
+    def encrypt(message, passphrase):
+        salt = Random.new().read(8)
+        key_iv = bytes_to_key(passphrase, salt, 32+16)
+        key = key_iv[:32]
+        iv = key_iv[32:]
+        aes = AES.new(key, AES.MODE_CBC, iv)
+        return base64.b64encode(b"Salted__" + salt + aes.encrypt(pad(message)))
+
+    def decrypt(encrypted, passphrase):
+        encrypted = base64.b64decode(encrypted)
+        assert encrypted[0:8] == b"Salted__"
+        salt = encrypted[8:16]
+        key_iv = bytes_to_key(passphrase, salt, 32+16)
+        key = key_iv[:32]
+        iv = key_iv[32:]
+        aes = AES.new(key, AES.MODE_CBC, iv)
+        return unpad(aes.decrypt(encrypted[16:]))
+
+    pt = decrypt(ciphered_text, _password)
+    return pt.decode()
+
+
+def get_SEC_KEY(_ID):
+    DB_PATH = THIS_FOLDER_G + "/db/__keys__.json"
+    with open(DB_PATH, 'r') as infile:
+        DB_ENTRIES = json.load(infile)
+    
+    if _ID in DB_ENTRIES:
+        SEC_KEY = DB_ENTRIES[_ID]
+    else:
+        SEC_KEY = "Not Found"
+    
+    return SEC_KEY
+
 
 # --- Helper Functions for instagram Login
 def to_json(python_object):
@@ -116,12 +111,10 @@ def to_json(python_object):
                 '__value__': codecs.encode(python_object, 'base64').decode()}
     raise TypeError(repr(python_object) + ' is not JSON serializable')
 
-
 def from_json(json_object):
     if '__class__' in json_object and json_object['__class__'] == 'bytes':
         return codecs.decode(json_object['__value__'].encode(), 'base64')
     return json_object
-
 
 def onlogin_callback(api, new_settings_file):
     cache_settings = api.settings
@@ -129,12 +122,10 @@ def onlogin_callback(api, new_settings_file):
         json.dump(cache_settings, outfile, default=to_json)
         print('SAVED: {0!s}'.format(new_settings_file))
 
-
 def ig_login(username, password):
-    global THIS_FOLDER_G
     device_id = None
+    settings_file = THIS_FOLDER_G + "/db/data/settings/" + username + ""
     try:
-        settings_file = THIS_FOLDER_G + "/json/settings/" + username + ""
         if not os.path.isfile(settings_file):
             # settings file does not exist
             print('Unable to find file: {0!s}'.format(settings_file))
@@ -153,55 +144,71 @@ def ig_login(username, password):
             api = Client(
                 username, password,
                 settings=cached_settings)
+        
+        current_user = api.current_user()
 
     except (ClientCookieExpiredError, ClientLoginRequiredError) as e:
         print('ClientCookieExpiredError/ClientLoginRequiredError: {0!s}'.format(e))
-
+        if os.path.isfile(settings_file):
+            os.remove(settings_file)
+        return {"status": "error", "msg": "Invalid Username or Password."}
         # Login expired
         # Do relogin but use default ua, keys and such
-        settings_file = THIS_FOLDER_G + "/json/settings/" + username + ""
-        api = Client(
-            username, password,
-            device_id=device_id,
-            on_login=lambda x: onlogin_callback(x, settings_file))
+        # settings_file = THIS_FOLDER_G + "/db/data/settings/" + username + ""
+        # api = Client(
+        #     username, password,
+        #     device_id=device_id,
+        #     on_login=lambda x: onlogin_callback(x, settings_file))
 
     except ClientLoginError as e:
         print('ClientLoginError {0!s}'.format(e))
-        return {"status": "error", "msg": "ClientLoginError"}
+        return {"status": "error", "msg": "Invalid Username or Password."}
 
     except ClientError as e:
         print('ClientError {0!s} (Code: {1:d}, Response: {2!s})'.format(e.msg, e.code, e.error_response))
-        return {"status": "error", "msg": "ClientError"}
+        return {"status": "error", "msg": "Invalid Username or Password."}
 
     except Exception as e:
         print('Unexpected Exception: {0!s}'.format(e))
-        return {"status": "error", "msg": "UnknownException"}
+        return {"status": "error", "msg": "Something went wrong."}
 
     # Show when login expires
     cookie_expiry = api.cookie_jar.expires_earliest
     print('Cookie Expiry: {0!s}'.format(datetime.datetime.fromtimestamp(cookie_expiry).strftime('%Y-%m-%dT%H:%M:%SZ')))
 
-    # print('All ok')
+    print('All ok')
     return api
 
 
+"""
+    ENDPOINTS
+"""
+
 @app.route('/login', methods=["POST"])
 def login():
+    _ID = request.form.get('_ID')
     username = request.form.get('username')
     password = request.form.get('password')
 
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+
     api = ig_login(username, password)
 
-    try:
-        if api["status"] and api["status"] == "error":
-            return jsonify(api)
-    except:
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
         user_id = api.authenticated_user_id
-        user_name = api.authenticated_user_name
         current_user = api.current_user()
 
         followers = api.user_followers(user_id)
-        initial_followers_file = THIS_FOLDER_G + "/json/initial_followers/" + username + ".json"
+        initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
         if not os.path.isfile(initial_followers_file):
             with open(initial_followers_file, 'w') as outfile:
                 json.dump(followers, outfile, indent=None)
@@ -214,15 +221,24 @@ def login():
 
 @app.route('/followers', methods=["POST"])
 def followers():
+    _ID = request.form.get('_ID')
     username = request.form.get('username')
     password = request.form.get('password')
 
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+
     api = ig_login(username, password)
 
-    try:
-        if api["status"] and api["status"] == "error":
-            return jsonify(api)
-    except:
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
         user_id = api.authenticated_user_id
         user_name = api.authenticated_user_name
         followers = api.user_followers(user_id)
@@ -240,15 +256,24 @@ def followers():
 
 @app.route('/following', methods=["POST"])
 def following():
+    _ID = request.form.get('_ID')
     username = request.form.get('username')
     password = request.form.get('password')
 
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+
     api = ig_login(username, password)
 
-    try:
-        if api["status"] and api["status"] == "error":
-            return jsonify(api)
-    except:
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
         user_id = api.authenticated_user_id
         user_name = api.authenticated_user_name
         followers = api.user_followers(user_id)
@@ -266,15 +291,24 @@ def following():
 
 @app.route('/unfollowers', methods=["POST"])
 def unfollowers():
+    _ID = request.form.get('_ID')
     username = request.form.get('username')
     password = request.form.get('password')
 
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+
     api = ig_login(username, password)
 
-    try:
-        if api["status"] and api["status"] == "error":
-            return jsonify(api)
-    except:
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
         user_id = api.authenticated_user_id
         user_name = api.authenticated_user_name
         followers = api.user_followers(user_id)
@@ -283,7 +317,7 @@ def unfollowers():
         initial_followers = {}
         unfollowers = {"users": []}
 
-        initial_followers_file = THIS_FOLDER_G + "/json/initial_followers/" + username + ".json"
+        initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
         if not os.path.isfile(initial_followers_file):
             with open(initial_followers_file, 'w') as outfile:
                 json.dump(followers, outfile, indent=None)
@@ -334,16 +368,25 @@ def unfollowers():
 
 @app.route('/followuser', methods=["POST"])
 def followuser():
+    _ID = request.form.get('_ID')
     username = request.form.get('username')
     password = request.form.get('password')
     other_user_id = request.form.get('other_user_id')
 
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+
     api = ig_login(username, password)
 
-    try:
-        if api["status"] and api["status"] == "error":
-            return jsonify(api)
-    except:
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
         user_id = api.authenticated_user_id
         user_name = api.authenticated_user_name
         follow_user = api.friendships_create(other_user_id)
@@ -353,16 +396,26 @@ def followuser():
 
 @app.route('/unfollowuser', methods=["POST"])
 def unfollowuser():
+    _ID = request.form.get('_ID')
     username = request.form.get('username')
     password = request.form.get('password')
     other_user_id = request.form.get('other_user_id')
 
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+    
+
     api = ig_login(username, password)
 
-    try:
-        if api["status"] and api["status"] == "error":
-            return jsonify(api)
-    except:
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
         user_id = api.authenticated_user_id
         user_name = api.authenticated_user_name
         unfollow_user = api.friendships_destroy(other_user_id)
@@ -379,24 +432,21 @@ def establishencryption():
         _X = int(request.form.get('_X'))
         _ID = str(request.form.get('_ID'))
 
-        _B = randint(100, 500);
-        _Y = pow(_G, _B) % (_N);
+        _B = randint(100, 500)
+        _Y = pow(_G, _B) % (_N)
 
-        xb = pow(_X, _B) % (_N);
-
+        xb = pow(_X, _B) % (_N)
+        
         SEC_KEY = xb
-
-        print(_ID)
-        print(SEC_KEY)
 
         DB_ENTRY = {_ID: SEC_KEY}
         DB_PATH = THIS_FOLDER_G + "/db/__keys__.json"
-
+        
         with open(DB_PATH, 'r') as infile:
             DB_ENTRIES = json.load(infile)
-
+        
         DB_ENTRIES[_ID] = str(SEC_KEY)
-
+        
         with open(DB_PATH, 'w') as outfile:
             json.dump(DB_ENTRIES, outfile, indent=2)
 
@@ -406,7 +456,21 @@ def establishencryption():
         return jsonify({"status": "error", "msg": "Somewthing Went Wrong. Please try again."})
 
 
-# __TODO__ update and replace saved data with new data
+@app.route('/confirmkeyexchange', methods=["POST"])
+def confirmkeyexchange():
+    _ID = request.form.get('_ID')
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+        else:
+            return jsonify({"status": "ok", "msg": "Secret Key Found"})
+    except:
+        return jsonify({"status": "error", "msg": "Somewthing Went Wrong. Please try again."})
+
+
+
+# __TODO__ update and replace saved data with new data i.e. reset
 
 # __TODO__ clear my data / logout completely
 

@@ -1,0 +1,324 @@
+*, *:before, *:after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    overflow-x: hidden;
+    /* font-family: Helvetica, Arial, sans-serif; */
+    /* font-family: Helvetica, Arial, sans-serif; */
+    font-family: 'Raleway', sans-serif;
+    min-height: 100vh;
+}
+body {
+    padding-bottom: 32px;
+}
+body * {
+    font-family: 'Raleway', sans-serif;
+}
+img {
+    max-width: 100%;
+}
+
+
+/* html, body {
+    background: #1b2832;
+    position: absolute;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
+  } */
+  @-webkit-keyframes loader-spin {
+    0% {
+      -webkit-transform: rotate(0deg);
+              transform: rotate(0deg);
+    }
+    100% {
+      -webkit-transform: rotate(360deg);
+              transform: rotate(360deg);
+    }
+  }
+  @keyframes loader-spin {
+    0% {
+      -webkit-transform: rotate(0deg);
+              transform: rotate(0deg);
+    }
+    100% {
+      -webkit-transform: rotate(360deg);
+              transform: rotate(360deg);
+    }
+  }
+  .loader {
+    position: absolute;
+    margin: -18px 0 0 -18px;
+    border: 3.6px solid #666;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+    overflow: hidden;
+    width: 26px;
+    height: 26px;
+    left: 50%;
+    top: 50%;
+    animation: loader-spin 2s linear infinite reverse;
+    -webkit-filter: url(#goo);
+            filter: url(#goo);
+    -webkit-box-shadow: 0 0 0 1px #666 inset;
+            box-shadow: 0 0 0 1px #666 inset;
+  }
+  .loader:before {
+    content: "";
+    position: absolute;
+    -webkit-animation: loader-spin 2s cubic-bezier(0.59, 0.25, 0.4, 0.69) infinite;
+            animation: loader-spin 2s cubic-bezier(0.59, 0.25, 0.4, 0.69) infinite;
+    background: #666;
+    -webkit-transform-origin: top center;
+            transform-origin: top center;
+    border-radius: 50%;
+    width: 150%;
+    height: 150%;
+    top: 50%;
+    left: -12.5%;
+  }
+  
+
+
+
+.loginFormOverlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    top: 0;
+    display: none;
+    background-color: rgba(255,255,255,0.8);
+    z-index: 10;
+}
+.loginFormOverlay .loginFormContainer {
+    position: relative;
+    display: inline-block;
+    padding: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #ffffff;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+}
+.loginFormOverlay .loginFormContainer input,
+.loginFormOverlay .loginFormContainer label,
+.loginFormOverlay .loginFormContainer button,
+.loginFormOverlay .loginFormContainer p {
+    display: block;
+    width: 320px;
+    margin: 0 10px;
+    padding: 16px;
+    font-size: 16px;
+    background-color: white;
+}
+.loginFormOverlay .loginFormContainer label,
+.loginFormOverlay .loginFormContainer p {
+    padding: 16px 0;
+}
+.loginFormOverlay .loginFormContainer input {
+    border: none;
+    outline: 0;
+    border: 1px solid #999999;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+.loginFormOverlay .loginFormContainer input:focus {
+    border: 1px solid #333333;
+}
+.loginFormOverlay .loginFormContainer button {
+    border: 1px solid #333333;
+    text-transform: uppercase;
+    outline: none;
+    color: #333333;
+    font-weight: bold;
+    padding: 16px 20px;
+    letter-spacing: 1px;
+    font-size: 15px;
+}
+.loginFormOverlay .loginFormContainer button:hover,
+.loginFormOverlay .loginFormContainer button:focus {
+    cursor: pointer;
+    background-color: #666666;
+    border: 1px solid #666666;
+    color: #ffffff;
+}
+.loginFormOverlay .loginFormContainer button:active {
+    background-color: #333333;
+    border: 1px solid #333333;
+    color: #ffffff;
+}
+
+
+header {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #dddddd;
+    /* box-shadow: 0 2px 16px rgba(0,0,0,0.1); */
+}
+.curUserProfileImgContainer {
+    /* margin: auto; */
+    /* display: inline-block; */
+    width: 60px;
+    height: 60px;
+    background-color: #efefef;
+    /* border: 2px solid #dddddd; */
+    border-radius: 10000px;
+    overflow: hidden;
+}
+.curUserInfoContainer {
+    /* display: inline-block; */
+    /* padding-left: 8px; */
+}
+.curUserInfoContainer .full_name {
+    color: #666666;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+.curUserInfoContainer .full_name a,
+.curUserInfoContainer .full_name a:hover,
+.curUserInfoContainer .full_name a:active {
+    text-decoration: none;
+    color: inherit;
+}
+.curUserInfoContainer .full_name a:hover {
+    color: #333333;
+    cursor: pointer;
+}
+.curUserInfoContainer .full_name a:active {
+    color: #000000;
+    cursor: pointer;
+}
+.curUserInfoContainer .username {
+    color: #aaaaaa;
+    font-size: 14px;
+    /* font-style: italic; */
+    letter-spacing: 1px;
+    /* font-weight: bold; */
+    /* margin-top: 1px; */
+}
+.curUserFollowerInfo {
+    text-align: right;
+}
+.curUserFollowerInfo button {
+    padding: 10px 14px;
+    text-transform: uppercase;
+    border: none;
+    outline: 0;
+    background-color: transparent;
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin: 0 6px;
+    margin-top: 10px;
+    cursor: pointer;
+    color: #999999;
+    font-weight: bold;
+}
+.curUserFollowerInfo button:hover {
+    color: #333333;
+}
+.curUserFollowerInfo button.active {
+    border-top: 2px solid #333333;
+    color: #333333;
+}
+
+.users_list_container {
+    /* padding-top: 20px; */
+    /* padding-bottom: 32px; */
+}
+.user_container {
+    padding: 14px 12px;
+    border: 1px solid #dddddd;
+    /* background-color: #efefef; */
+    font-size: 0px;
+    margin-top: 32px;
+}
+.user_container .user_img_container {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    background-color: #efefef;
+    border-radius: 10000px;
+    overflow: hidden;
+    vertical-align: middle;
+}
+.user_container .user_info_container {
+    display: inline-block;
+    width: calc(100% - 150px);
+    /* overflow: hidden; */
+    padding-left: 10px;
+    vertical-align: middle;
+}
+.user_container .user_info_container .user_full_name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #666666;
+    letter-spacing: 1px;
+}
+.user_container .user_info_container .user_full_name .user_following_you {
+    font-size: 10px;
+    color: #999999;
+    padding-bottom: 2px;
+    font-weight: bold;
+    font-style: italic;
+    letter-spacing: 1px;
+}
+.user_container .user_info_container .user_username {
+    font-size: 13px;
+    color: #333333;
+    letter-spacing: 1px;
+}
+.user_container .user_action_container {
+    display: inline-block;
+    text-align: right;
+    width: 100px;
+    vertical-align: middle;
+}
+.user_container .user_action_container button.user_follow_button {
+    display: inline-block;
+    text-align: right;
+    background-color: #ffffff;
+    font-size: 12px;
+    padding: 8px 12px;
+    outline: 0;
+    border: 1px solid #666666;
+    color: #333333;
+    letter-spacing: 1px;
+}
+.user_container .user_action_container button.user_follow_button.unfollow {
+    background-color: #ffffff;
+    border: 1px solid #ababab;
+    color: #666666;
+}
+.user_container .user_action_container button.user_follow_button.unfollow:hover {
+    cursor: pointer;
+}
+.user_container .user_action_container button.user_follow_button.unfollow:active {
+    cursor: pointer;
+    border: 1px solid #000000;
+    color: #000000;
+}
+.user_container .user_action_container button.user_follow_button.follow {
+    background-color: #666666;
+    border: 1px solid #666666;
+    color: #ffffff;
+}
+.user_container .user_action_container button.user_follow_button.follow:hover {
+    cursor: pointer;
+}
+.user_container .user_action_container button.user_follow_button.follow:active {
+    cursor: pointer;
+    background-color: #333333;
+    border: 1px solid #333333;
+    color: #ffffff;
+}
