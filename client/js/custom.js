@@ -1,4 +1,3 @@
-
 var REST_Endpoints = {
     establishencryption: "http://127.0.0.1:5000/establishencryption",
     confirmkeyexchange: "http://127.0.0.1:5000/confirmkeyexchange",
@@ -22,16 +21,16 @@ function lifeCycle() {
         confirmKeyExchange();
     }
 
-    if (!localStorage.getItem("_USERNAME") || 
+    if (!localStorage.getItem("_USERNAME") ||
         !localStorage.getItem("_PASSWORD") ||
         !localStorage.getItem("_CURRENT_USER")
     ) {
         askForLogin();
     }
-    
+
     if (localStorage.getItem("_ID") &&
         localStorage.getItem("SEC_KEY") &&
-        localStorage.getItem("_USERNAME") && 
+        localStorage.getItem("_USERNAME") &&
         localStorage.getItem("_PASSWORD")
     ) {
         updateCurrentUser();
@@ -44,6 +43,7 @@ function lifeCycle() {
 
 function bindEventsToMenuBtns() {
     var menuButtons = document.getElementById("curUserFollowerInfo").getElementsByTagName("button");
+
     function bindEmAll() {
         var menuButton = this;
         clearUserListsSections();
@@ -58,9 +58,10 @@ function bindEventsToMenuBtns() {
         } else if (menuButton.getAttribute("id") == "unfollowersInfoButton") {
             getUnfollowers();
         } else if (menuButton.getAttribute("id") == "settingsInfoButton") {
-            
+
         }
     }
+
     for (var i = 0; i < menuButtons.length; i++) {
         menuButtons[i].onclick = bindEmAll;
     }
@@ -81,16 +82,16 @@ function fillUserUnfollowers(unfollowers) {
     var unfollowersLength = unfollowers.length;
     for (var i = 0; i < unfollowersLength; i++) {
         var unfollower = unfollowers[i];
-        
+
         var followed_by_you = unfollower.followed_by_you == true ? "Unfollow" : "Follow";
-        
+
         var buttonTemplate = ``;
         if (unfollower.followed_by_you == true) {
             buttonTemplate = `<button class="user_follow_button unfollow" data-id="${unfollower.pk}" onclick="unfollowUser(${unfollower.pk})">Unfollow</button>`;
         } else {
             buttonTemplate = `<button class="user_follow_button follow" data-id="${unfollower.pk}" onclick="followUser(${unfollower.pk})">Follow</button>`;
         }
-        
+
         var template = `
         <div class="col-md-6" id="${unfollower.pk}">
             <div class="user_container">
@@ -118,15 +119,15 @@ function getUnfollowers() {
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.unfollowers, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
         removeLoader("unfollowersListContainerRow");
-        
+
         if (response.status != "ok") {
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
@@ -145,16 +146,16 @@ function fillUserFollowers(followers) {
     var followersLength = followers.length;
     for (var i = 0; i < followersLength; i++) {
         var follower = followers[i];
-        
+
         var followed_by_you = follower.followed_by_you == true ? "Unfollow" : "Follow";
-        
+
         var buttonTemplate = ``;
         if (follower.followed_by_you == true) {
             buttonTemplate = `<button class="user_follow_button unfollow" data-id="${follower.pk}" onclick="unfollowUser(${follower.pk})">Unfollow</button>`;
         } else {
             buttonTemplate = `<button class="user_follow_button follow" data-id="${follower.pk}" onclick="followUser(${follower.pk})">Follow</button>`;
         }
-        
+
         var template = `
         <div class="col-md-6" id="${follower.pk}">
             <div class="user_container">
@@ -177,18 +178,18 @@ function fillUserFollowers(followers) {
 
 function getFollowers() {
     appendLoader("followersListContainerRow");
-    
+
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.followers, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-        
+
         removeLoader("followersListContainerRow");
 
         if (response.status != "ok") {
@@ -232,20 +233,20 @@ function fillUserFollowing(following) {
 
 function getFollowing() {
     appendLoader("followingListContainerRow");
-    
+
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.following, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
         removeLoader("followingListContainerRow");
-        
+
         if (response.status != "ok") {
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
@@ -273,13 +274,13 @@ function updateCurrentUser() {
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.login, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-        
+
         if (response.status != "ok") {
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
@@ -292,19 +293,19 @@ function updateCurrentUser() {
     xhr.send(data);
 }
 
-function unfollowUser(other_user_id){
+function unfollowUser(other_user_id) {
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
     data.append('other_user_id', other_user_id);
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.unfollowuser, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-        
+
         if (response.status != "ok") {
             // askForLogin();
         } else {
@@ -318,19 +319,19 @@ function unfollowUser(other_user_id){
     xhr.send(data);
 }
 
-function followUser(other_user_id){
+function followUser(other_user_id) {
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
     data.append('other_user_id', other_user_id);
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.followuser, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-        
+
         if (response.status != "ok") {
             // askForLogin();
         } else {
@@ -361,29 +362,29 @@ function appendLoader(id) {
             </defs>
         </svg>
     </div>`;
-    
+
     document.getElementById(id).innerHTML = loaderTeemplate;
 }
 
 function askForLogin() {
     var loginFormOverlay = document.getElementById("loginFormOverlay");
     loginFormOverlay.style.display = "block";
-    
+
     var login_submit_button = document.getElementById("login_submit_button");
-    
-    login_submit_button.onclick = function() {
+
+    login_submit_button.onclick = function () {
 
         var login_username = document.getElementById("login_username").value;
         var login_password = document.getElementById("login_password").value;
         login_password = encrypt_data(login_password, localStorage.getItem("SEC_KEY"));
-        
+
         var data = new FormData();
         data.append('username', login_username);
         data.append('password', login_password);
         data.append('_ID', localStorage.getItem("_ID"));
-        
+
         var xhr = new XMLHttpRequest();
-        
+
         xhr.open('POST', REST_Endpoints.login, true);
         xhr.onload = function () {
             var response = JSON.parse(this.responseText);
@@ -405,13 +406,13 @@ function askForLogin() {
 function confirmKeyExchange() {
     var data = new FormData();
     data.append('_ID', localStorage.getItem("_ID"));
-    
+
     var xhr = new XMLHttpRequest();
-    
+
     xhr.open('POST', REST_Endpoints.confirmkeyexchange, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-        
+
         if (response.status != "ok") {
             console.log(response.msg);
             generate_exchange_DH_key(REST_Endpoints.establishencryption);
@@ -427,13 +428,13 @@ function confirmKeyExchange() {
 // -----------------------------------
 function generate_exchange_DH_key(_URL) {
     function uuidv4() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     }
 
-    var PrimeFinder = (function() {
+    var PrimeFinder = (function () {
         var PRIMES = [];
         var MAX_RANGE = 10000;
 
@@ -467,12 +468,16 @@ function generate_exchange_DH_key(_URL) {
 
             if (!PRIMES.length) _generatePrimes();
 
-            var index = PRIMES.findIndex(n => n > upperBound);
+            var index = PRIMES.findIndex(n = > n > upperBound
+        )
+            ;
             // Return a copy of the array so users can't mess with the module
-            return index == -1 ? [...PRIMES] : PRIMES.slice(0, index);
+            return index == -1 ? [...PRIMES
+        ] :
+            PRIMES.slice(0, index);
         }
 
-        return { isPrime, findPrimes };
+        return {isPrime, findPrimes};
     }());
 
     var listOfRsaNums = [
@@ -521,7 +526,7 @@ function generate_exchange_DH_key(_URL) {
         y = bigInt(y);
         var ya = y.pow(_A).mod(_N);
         SEC_KEY = ya.toString(10);
-        
+
         if (!localStorage.getItem("_ID") || !localStorage.getItem("SEC_KEY")) {
             localStorage.setItem("_ID", _ID);
             localStorage.setItem("SEC_KEY", SEC_KEY);
@@ -530,6 +535,7 @@ function generate_exchange_DH_key(_URL) {
     xhr.send(data);
 
 }
+
 function encrypt_data(_text, _password) {
     var data = _text;
     var password = _password;
