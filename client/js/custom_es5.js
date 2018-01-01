@@ -6,7 +6,10 @@ var REST_Endpoints = {
     unfollowers: "http://127.0.0.1:5000/unfollowers",
     following: "http://127.0.0.1:5000/following",
     followuser: "http://127.0.0.1:5000/followuser",
-    unfollowuser: "http://127.0.0.1:5000/unfollowuser"
+    unfollowuser: "http://127.0.0.1:5000/unfollowuser",
+    reset: "http://127.0.0.1:5000/reset",
+    logout: "http://127.0.0.1:5000/logout",
+    completelogout: "http://127.0.0.1:5000/completelogout"
 };
 
 window.onload = lifeCycle;
@@ -24,7 +27,7 @@ function lifeCycle() {
 
     if (localStorage.getItem("_ID") && localStorage.getItem("SEC_KEY") && localStorage.getItem("_USERNAME") && localStorage.getItem("_PASSWORD")) {
         updateCurrentUser();
-        getFollowing();
+        // getFollowing();
         // getFollowers();
         // getUnfollowers();
     }
@@ -46,7 +49,9 @@ function bindEventsToMenuBtns() {
             getFollowers();
         } else if (menuButton.getAttribute("id") == "unfollowersInfoButton") {
             getUnfollowers();
-        } else if (menuButton.getAttribute("id") == "settingsInfoButton") {}
+        } else if (menuButton.getAttribute("id") == "settingsInfoButton") {
+            loadSettings();
+        }
     }
     for (var i = 0; i < menuButtons.length; i++) {
         menuButtons[i].onclick = bindEmAll;
@@ -54,11 +59,127 @@ function bindEventsToMenuBtns() {
 }
 
 function clearUserListsSections() {
-    var users_list_containers = document.getElementsByClassName("users_list_container");
-    for (var i = 0; i < users_list_containers.length; i++) {
-        var list_container = users_list_containers[i].getElementsByClassName("row")[0];
+    var main_content_containers = document.getElementsByClassName("main_content_container");
+    for (var i = 0; i < main_content_containers.length; i++) {
+        var list_container = main_content_containers[i].getElementsByClassName("row")[0];
+        removeLoader(main_content_containers[i].getAttribute("id"));
         list_container.innerHTML = "";
+        main_content_containers[i].style.display = "none";
     }
+}
+
+function loadSettings() {
+    var settingsListContainer = document.getElementById("settingsListContainer");
+    var settingsListContainerRow = settingsListContainer.getElementsByClassName("settingsListContainerRow")[0];
+    settingsListContainer.style.display = "";
+
+    var settingsTemplate = "\n    <div class=\"col-md-12\">\n        <div class=\"user_container\">\n            <div class=\"reset_settings_container\">\n                <button class=\"resetButton settings_button\" id=\"resetButton\">Reset Unfollowers</button>\n                <p class=\"settings_text\">Resets unfollowers list.</p>\n            </div>\n        </div>\n    </div>\n    <div class=\"col-md-12\">\n        <div class=\"user_container\">\n            <div class=\"reset_settings_container\">\n                <button class=\"logoutButton settings_button\" id=\"logoutButton\">Logout</button>\n                <p class=\"settings_text\">Logs you out from this device.</p>\n            </div>\n        </div>\n    </div>\n    <div class=\"col-md-12\">\n        <div class=\"user_container\">\n            <div class=\"reset_settings_container\">\n                <button class=\"completeLogoutButton settings_button\" id=\"completeLogoutButton\">Logout and Delete Data</button>\n                <p class=\"settings_text\">Logs you out from every device and deletes your cookie and unfollowers data.<br>NOTE: This only deletes the data from our server and not from your Instagram Account.</p>\n            </div>\n        </div>\n    </div>\n    ";
+    settingsListContainerRow.innerHTML = settingsTemplate;
+
+    var resetButton = document.getElementById("resetButton");
+    resetButton.onclick = function () {
+        var data = new FormData();
+        data.append('username', localStorage.getItem("_USERNAME"));
+        data.append('password', localStorage.getItem("_PASSWORD"));
+        data.append('_ID', localStorage.getItem("_ID"));
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.open('POST', REST_Endpoints.reset, true);
+        xhr.onload = function () {
+            var response = JSON.parse(this.responseText);
+
+            removeLoader("unfollowersListContainer");
+
+            if (response.status != "ok") {
+                if (response.msg == "New User.") {
+                    console.log(response.msg);
+                    localStorage.removeItem("_USERNAME");
+                    localStorage.removeItem("_PASSWORD");
+                    localStorage.removeItem("_CURRENT_USER");
+                    window.location.reload(true);
+                }
+                if (response.msg == "Invalid Username or Password.") {
+                    askForLogin();
+                }
+            } else {
+                console.log(response.msg);
+            }
+        };
+        xhr.send(data);
+    };
+    var logoutButton = document.getElementById("logoutButton");
+    logoutButton.onclick = function () {
+        var data = new FormData();
+        data.append('username', localStorage.getItem("_USERNAME"));
+        data.append('password', localStorage.getItem("_PASSWORD"));
+        data.append('_ID', localStorage.getItem("_ID"));
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.open('POST', REST_Endpoints.logout, true);
+        xhr.onload = function () {
+            var response = JSON.parse(this.responseText);
+
+            removeLoader("unfollowersListContainer");
+
+            if (response.status != "ok") {
+                if (response.msg == "New User.") {
+                    console.log(response.msg);
+                    localStorage.removeItem("_USERNAME");
+                    localStorage.removeItem("_PASSWORD");
+                    localStorage.removeItem("_CURRENT_USER");
+                    window.location.reload(true);
+                }
+                if (response.msg == "Invalid Username or Password.") {
+                    askForLogin();
+                }
+            } else {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
+        };
+        xhr.send(data);
+    };
+    var completeLogoutButton = document.getElementById("completeLogoutButton");
+    completeLogoutButton.onclick = function () {
+        var data = new FormData();
+        data.append('username', localStorage.getItem("_USERNAME"));
+        data.append('password', localStorage.getItem("_PASSWORD"));
+        data.append('_ID', localStorage.getItem("_ID"));
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.open('POST', REST_Endpoints.completelogout, true);
+        xhr.onload = function () {
+            var response = JSON.parse(this.responseText);
+
+            removeLoader("unfollowersListContainer");
+
+            if (response.status != "ok") {
+                if (response.msg == "New User.") {
+                    console.log(response.msg);
+                    localStorage.removeItem("_USERNAME");
+                    localStorage.removeItem("_PASSWORD");
+                    localStorage.removeItem("_CURRENT_USER");
+                    window.location.reload(true);
+                }
+                if (response.msg == "Invalid Username or Password.") {
+                    askForLogin();
+                }
+            } else {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
+        };
+        xhr.send(data);
+    };
 }
 
 function fillUserUnfollowers(unfollowers) {
@@ -84,7 +205,10 @@ function fillUserUnfollowers(unfollowers) {
 }
 
 function getUnfollowers() {
-    appendLoader("unfollowersListContainerRow");
+    clearUserListsSections();
+    var unfollowersListContainer = document.getElementById("unfollowersListContainer");
+    unfollowersListContainer.style.display = "";
+    appendLoader("unfollowersListContainer");
 
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
@@ -97,9 +221,16 @@ function getUnfollowers() {
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
-        removeLoader("unfollowersListContainerRow");
+        removeLoader("unfollowersListContainer");
 
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
@@ -133,7 +264,10 @@ function fillUserFollowers(followers) {
 }
 
 function getFollowers() {
-    appendLoader("followersListContainerRow");
+    clearUserListsSections();
+    var followersListContainer = document.getElementById("followersListContainer");
+    followersListContainer.style.display = "";
+    appendLoader("followersListContainer");
 
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
@@ -146,9 +280,16 @@ function getFollowers() {
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
-        removeLoader("followersListContainerRow");
+        removeLoader("followersListContainer");
 
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
@@ -173,7 +314,10 @@ function fillUserFollowing(following) {
 }
 
 function getFollowing() {
-    appendLoader("followingListContainerRow");
+    clearUserListsSections();
+    var followingListContainer = document.getElementById("followingListContainer");
+    followingListContainer.style.display = "";
+    appendLoader("followingListContainer");
 
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
@@ -186,9 +330,16 @@ function getFollowing() {
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
-        removeLoader("followingListContainerRow");
+        removeLoader("followingListContainer");
 
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
@@ -223,11 +374,19 @@ function updateCurrentUser() {
         var response = JSON.parse(this.responseText);
 
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
         } else {
             localStorage.setItem("_CURRENT_USER", JSON.stringify(response.user));
+            getFollowing();
             fillCurrentUserProfile();
         }
     };
@@ -287,13 +446,13 @@ function followUser(other_user_id) {
 }
 
 function removeLoader(id) {
-    document.getElementById(id).innerHTML = "";
+    document.getElementById(id).getElementsByClassName("row")[0].innerHTML = "";
 }
 
 function appendLoader(id) {
     var loaderTeemplate = "\n    <div class=\"loader\">\n        <svg>\n            <defs>\n            <filter id=\"goo\">\n                <feGaussianBlur in=\"SourceGraphic\" stdDeviation=\"1\" result=\"blur\" />\n                <feColorMatrix in=\"blur\" mode=\"matrix\" values=\"1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 4 -2\" result=\"gooey\" />\n                <feComposite in=\"SourceGraphic\" in2=\"gooey\" operator=\"atop\"/>\n            </filter>\n            </defs>\n        </svg>\n    </div>";
-
-    document.getElementById(id).innerHTML = loaderTeemplate;
+    document.getElementById(id).style.display = "";
+    document.getElementById(id).getElementsByClassName("row")[0].innerHTML = loaderTeemplate;
 }
 
 function askForLogin() {
