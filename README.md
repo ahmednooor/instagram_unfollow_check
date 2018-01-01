@@ -20,7 +20,7 @@ python app.py
 
 #### Via Docker
 
- 
+ ....
 
 ## Client Server Communication
 
@@ -73,10 +73,23 @@ python app.py
 
 > receives `username`, `password`, `other_user_id`(id of the user to unfollow) and `_ID`(client specific id) variables in formdata.
 
-##### TODO
-> update and replace saved data with new data i.e. reset
+##### `domain.name/reset`
+> reset unfollowers list
 
-> clear my data / logout completely
+> receives `username`, `password`, and `_ID`(client specific id) variables in formdata.
+
+##### `domain.name/logout`
+> logout from current device
+
+> receives `username`, `password`, and `_ID`(client specific id) variables in formdata.
+
+##### `domain.name/completelogout`
+> logout and delete holding user data from server
+
+> receives `username`, `password`, and `_ID`(client specific id) variables in formdata.
+
+##### TODO
+> replace static json file storage with a database.
 
 ---
 ## References/Credits
