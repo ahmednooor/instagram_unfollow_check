@@ -1,3 +1,4 @@
+
 var REST_Endpoints = {
     establishencryption: "http://127.0.0.1:5000/establishencryption",
     confirmkeyexchange: "http://127.0.0.1:5000/confirmkeyexchange",
@@ -6,7 +7,10 @@ var REST_Endpoints = {
     unfollowers: "http://127.0.0.1:5000/unfollowers",
     following: "http://127.0.0.1:5000/following",
     followuser: "http://127.0.0.1:5000/followuser",
-    unfollowuser: "http://127.0.0.1:5000/unfollowuser"
+    unfollowuser: "http://127.0.0.1:5000/unfollowuser",
+    reset: "http://127.0.0.1:5000/reset",
+    logout: "http://127.0.0.1:5000/logout",
+    completelogout: "http://127.0.0.1:5000/completelogout"
 };
 
 window.onload = lifeCycle;
@@ -21,20 +25,20 @@ function lifeCycle() {
         confirmKeyExchange();
     }
 
-    if (!localStorage.getItem("_USERNAME") ||
+    if (!localStorage.getItem("_USERNAME") || 
         !localStorage.getItem("_PASSWORD") ||
         !localStorage.getItem("_CURRENT_USER")
     ) {
         askForLogin();
     }
-
+    
     if (localStorage.getItem("_ID") &&
         localStorage.getItem("SEC_KEY") &&
-        localStorage.getItem("_USERNAME") &&
+        localStorage.getItem("_USERNAME") && 
         localStorage.getItem("_PASSWORD")
     ) {
         updateCurrentUser();
-        getFollowing();
+        // getFollowing();
         // getFollowers();
         // getUnfollowers();
     }
@@ -43,7 +47,6 @@ function lifeCycle() {
 
 function bindEventsToMenuBtns() {
     var menuButtons = document.getElementById("curUserFollowerInfo").getElementsByTagName("button");
-
     function bindEmAll() {
         var menuButton = this;
         clearUserListsSections();
@@ -58,40 +61,180 @@ function bindEventsToMenuBtns() {
         } else if (menuButton.getAttribute("id") == "unfollowersInfoButton") {
             getUnfollowers();
         } else if (menuButton.getAttribute("id") == "settingsInfoButton") {
-
+            loadSettings();
         }
     }
-
     for (var i = 0; i < menuButtons.length; i++) {
         menuButtons[i].onclick = bindEmAll;
     }
 }
 
 function clearUserListsSections() {
-    var users_list_containers = document.getElementsByClassName("users_list_container");
-    for (var i = 0; i < users_list_containers.length; i++) {
-        var list_container = users_list_containers[i].getElementsByClassName("row")[0];
+    var main_content_containers = document.getElementsByClassName("main_content_container");
+    for (var i = 0; i < main_content_containers.length; i++) {
+        var list_container = main_content_containers[i].getElementsByClassName("row")[0];
+        removeLoader(main_content_containers[i].getAttribute("id"));
         list_container.innerHTML = "";
+        main_content_containers[i].style.display = "none";
     }
+}
+
+function loadSettings() {
+    var settingsListContainer = document.getElementById("settingsListContainer");
+    var settingsListContainerRow = settingsListContainer.getElementsByClassName("settingsListContainerRow")[0];
+    settingsListContainer.style.display = "";
+
+    var settingsTemplate = `
+    <div class="col-md-12">
+        <div class="user_container">
+            <div class="reset_settings_container">
+                <button class="resetButton settings_button" id="resetButton">Reset Unfollowers</button>
+                <p class="settings_text">Resets unfollowers list.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12">
+        <div class="user_container">
+            <div class="reset_settings_container">
+                <button class="logoutButton settings_button" id="logoutButton">Logout</button>
+                <p class="settings_text">Logs you out from this device.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12">
+        <div class="user_container">
+            <div class="reset_settings_container">
+                <button class="completeLogoutButton settings_button" id="completeLogoutButton">Logout and Delete Data</button>
+                <p class="settings_text">Logs you out from every device and deletes your cookie and unfollowers data.<br>NOTE: This only deletes the data from our server and not from your Instagram Account.</p>
+            </div>
+        </div>
+    </div>
+    `;
+    settingsListContainerRow.innerHTML = settingsTemplate;
+
+    var resetButton = document.getElementById("resetButton");
+    resetButton.onclick = function() {
+        var data = new FormData();
+        data.append('username', localStorage.getItem("_USERNAME"));
+        data.append('password', localStorage.getItem("_PASSWORD"));
+        data.append('_ID', localStorage.getItem("_ID"));
+        
+        var xhr = new XMLHttpRequest();
+        
+        xhr.open('POST', REST_Endpoints.reset, true);
+        xhr.onload = function () {
+            var response = JSON.parse(this.responseText);
+
+            removeLoader("unfollowersListContainer");
+            
+            if (response.status != "ok") {
+                if (response.msg == "New User.") {
+                    console.log(response.msg);
+                    localStorage.removeItem("_USERNAME");
+                    localStorage.removeItem("_PASSWORD");
+                    localStorage.removeItem("_CURRENT_USER");
+                    window.location.reload(true);
+                }
+                if (response.msg == "Invalid Username or Password.") {
+                    askForLogin();
+                }
+            } else {
+                console.log(response.msg);
+            }
+        };
+        xhr.send(data);
+    };
+    var logoutButton = document.getElementById("logoutButton");
+    logoutButton.onclick = function() {
+        var data = new FormData();
+        data.append('username', localStorage.getItem("_USERNAME"));
+        data.append('password', localStorage.getItem("_PASSWORD"));
+        data.append('_ID', localStorage.getItem("_ID"));
+        
+        var xhr = new XMLHttpRequest();
+        
+        xhr.open('POST', REST_Endpoints.logout, true);
+        xhr.onload = function () {
+            var response = JSON.parse(this.responseText);
+
+            removeLoader("unfollowersListContainer");
+            
+            if (response.status != "ok") {
+                if (response.msg == "New User.") {
+                    console.log(response.msg);
+                    localStorage.removeItem("_USERNAME");
+                    localStorage.removeItem("_PASSWORD");
+                    localStorage.removeItem("_CURRENT_USER");
+                    window.location.reload(true);
+                }
+                if (response.msg == "Invalid Username or Password.") {
+                    askForLogin();
+                }
+            } else {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
+        };
+        xhr.send(data);
+    };
+    var completeLogoutButton = document.getElementById("completeLogoutButton");
+    completeLogoutButton.onclick = function() {
+        var data = new FormData();
+        data.append('username', localStorage.getItem("_USERNAME"));
+        data.append('password', localStorage.getItem("_PASSWORD"));
+        data.append('_ID', localStorage.getItem("_ID"));
+        
+        var xhr = new XMLHttpRequest();
+        
+        xhr.open('POST', REST_Endpoints.completelogout, true);
+        xhr.onload = function () {
+            var response = JSON.parse(this.responseText);
+
+            removeLoader("unfollowersListContainer");
+            
+            if (response.status != "ok") {
+                if (response.msg == "New User.") {
+                    console.log(response.msg);
+                    localStorage.removeItem("_USERNAME");
+                    localStorage.removeItem("_PASSWORD");
+                    localStorage.removeItem("_CURRENT_USER");
+                    window.location.reload(true);
+                }
+                if (response.msg == "Invalid Username or Password.") {
+                    askForLogin();
+                }
+            } else {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
+        };
+        xhr.send(data);
+    };
 }
 
 function fillUserUnfollowers(unfollowers) {
     var unfollowersListContainer = document.getElementById("unfollowersListContainer");
     var unfollowersListContainerRow = unfollowersListContainer.getElementsByClassName("unfollowersListContainerRow")[0];
-
+    
     var unfollowersLength = unfollowers.length;
     for (var i = 0; i < unfollowersLength; i++) {
         var unfollower = unfollowers[i];
-
+        
         var followed_by_you = unfollower.followed_by_you == true ? "Unfollow" : "Follow";
-
+        
         var buttonTemplate = ``;
         if (unfollower.followed_by_you == true) {
             buttonTemplate = `<button class="user_follow_button unfollow" data-id="${unfollower.pk}" onclick="unfollowUser(${unfollower.pk})">Unfollow</button>`;
         } else {
             buttonTemplate = `<button class="user_follow_button follow" data-id="${unfollower.pk}" onclick="followUser(${unfollower.pk})">Follow</button>`;
         }
-
+        
         var template = `
         <div class="col-md-6" id="${unfollower.pk}">
             <div class="user_container">
@@ -113,22 +256,32 @@ function fillUserUnfollowers(unfollowers) {
 }
 
 function getUnfollowers() {
-    appendLoader("unfollowersListContainerRow");
+    clearUserListsSections()
+    var unfollowersListContainer = document.getElementById("unfollowersListContainer");
+    unfollowersListContainer.style.display = "";
+    appendLoader("unfollowersListContainer");
 
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.unfollowers, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
-        removeLoader("unfollowersListContainerRow");
-
+        removeLoader("unfollowersListContainer");
+        
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
@@ -146,16 +299,16 @@ function fillUserFollowers(followers) {
     var followersLength = followers.length;
     for (var i = 0; i < followersLength; i++) {
         var follower = followers[i];
-
+        
         var followed_by_you = follower.followed_by_you == true ? "Unfollow" : "Follow";
-
+        
         var buttonTemplate = ``;
         if (follower.followed_by_you == true) {
             buttonTemplate = `<button class="user_follow_button unfollow" data-id="${follower.pk}" onclick="unfollowUser(${follower.pk})">Unfollow</button>`;
         } else {
             buttonTemplate = `<button class="user_follow_button follow" data-id="${follower.pk}" onclick="followUser(${follower.pk})">Follow</button>`;
         }
-
+        
         var template = `
         <div class="col-md-6" id="${follower.pk}">
             <div class="user_container">
@@ -177,22 +330,32 @@ function fillUserFollowers(followers) {
 }
 
 function getFollowers() {
-    appendLoader("followersListContainerRow");
-
+    clearUserListsSections()
+    var followersListContainer = document.getElementById("followersListContainer");
+    followersListContainer.style.display = "";
+    appendLoader("followersListContainer");
+    
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.followers, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-
-        removeLoader("followersListContainerRow");
+        
+        removeLoader("followersListContainer");
 
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
@@ -232,22 +395,32 @@ function fillUserFollowing(following) {
 }
 
 function getFollowing() {
-    appendLoader("followingListContainerRow");
-
+    clearUserListsSections()
+    var followingListContainer = document.getElementById("followingListContainer");
+    followingListContainer.style.display = "";
+    appendLoader("followingListContainer");
+    
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.following, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
 
-        removeLoader("followingListContainerRow");
-
+        removeLoader("followingListContainer");
+        
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
@@ -274,38 +447,46 @@ function updateCurrentUser() {
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.login, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-
+        
         if (response.status != "ok") {
+            if (response.msg == "New User.") {
+                console.log(response.msg);
+                localStorage.removeItem("_USERNAME");
+                localStorage.removeItem("_PASSWORD");
+                localStorage.removeItem("_CURRENT_USER");
+                window.location.reload(true);
+            }
             if (response.msg == "Invalid Username or Password.") {
                 askForLogin();
             }
         } else {
             localStorage.setItem("_CURRENT_USER", JSON.stringify(response.user));
+            getFollowing();
             fillCurrentUserProfile();
         }
     };
     xhr.send(data);
 }
 
-function unfollowUser(other_user_id) {
+function unfollowUser(other_user_id){
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
     data.append('other_user_id', other_user_id);
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.unfollowuser, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-
+        
         if (response.status != "ok") {
             // askForLogin();
         } else {
@@ -319,19 +500,19 @@ function unfollowUser(other_user_id) {
     xhr.send(data);
 }
 
-function followUser(other_user_id) {
+function followUser(other_user_id){
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
     data.append('other_user_id', other_user_id);
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.followuser, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-
+        
         if (response.status != "ok") {
             // askForLogin();
         } else {
@@ -346,7 +527,7 @@ function followUser(other_user_id) {
 }
 
 function removeLoader(id) {
-    document.getElementById(id).innerHTML = "";
+    document.getElementById(id).getElementsByClassName("row")[0].innerHTML = "";
 }
 
 function appendLoader(id) {
@@ -362,29 +543,29 @@ function appendLoader(id) {
             </defs>
         </svg>
     </div>`;
-
-    document.getElementById(id).innerHTML = loaderTeemplate;
+    document.getElementById(id).style.display = "";
+    document.getElementById(id).getElementsByClassName("row")[0].innerHTML = loaderTeemplate;
 }
 
 function askForLogin() {
     var loginFormOverlay = document.getElementById("loginFormOverlay");
     loginFormOverlay.style.display = "block";
-
+    
     var login_submit_button = document.getElementById("login_submit_button");
-
-    login_submit_button.onclick = function () {
+    
+    login_submit_button.onclick = function() {
 
         var login_username = document.getElementById("login_username").value;
         var login_password = document.getElementById("login_password").value;
         login_password = encrypt_data(login_password, localStorage.getItem("SEC_KEY"));
-
+        
         var data = new FormData();
         data.append('username', login_username);
         data.append('password', login_password);
         data.append('_ID', localStorage.getItem("_ID"));
-
+        
         var xhr = new XMLHttpRequest();
-
+        
         xhr.open('POST', REST_Endpoints.login, true);
         xhr.onload = function () {
             var response = JSON.parse(this.responseText);
@@ -406,13 +587,13 @@ function askForLogin() {
 function confirmKeyExchange() {
     var data = new FormData();
     data.append('_ID', localStorage.getItem("_ID"));
-
+    
     var xhr = new XMLHttpRequest();
-
+    
     xhr.open('POST', REST_Endpoints.confirmkeyexchange, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
-
+        
         if (response.status != "ok") {
             console.log(response.msg);
             generate_exchange_DH_key(REST_Endpoints.establishencryption);
@@ -428,13 +609,13 @@ function confirmKeyExchange() {
 // -----------------------------------
 function generate_exchange_DH_key(_URL) {
     function uuidv4() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     }
 
-    var PrimeFinder = (function () {
+    var PrimeFinder = (function() {
         var PRIMES = [];
         var MAX_RANGE = 10000;
 
@@ -468,16 +649,12 @@ function generate_exchange_DH_key(_URL) {
 
             if (!PRIMES.length) _generatePrimes();
 
-            var index = PRIMES.findIndex(n = > n > upperBound
-        )
-            ;
+            var index = PRIMES.findIndex(n => n > upperBound);
             // Return a copy of the array so users can't mess with the module
-            return index == -1 ? [...PRIMES
-        ] :
-            PRIMES.slice(0, index);
+            return index == -1 ? [...PRIMES] : PRIMES.slice(0, index);
         }
 
-        return {isPrime, findPrimes};
+        return { isPrime, findPrimes };
     }());
 
     var listOfRsaNums = [
@@ -526,7 +703,7 @@ function generate_exchange_DH_key(_URL) {
         y = bigInt(y);
         var ya = y.pow(_A).mod(_N);
         SEC_KEY = ya.toString(10);
-
+        
         if (!localStorage.getItem("_ID") || !localStorage.getItem("SEC_KEY")) {
             localStorage.setItem("_ID", _ID);
             localStorage.setItem("SEC_KEY", SEC_KEY);
@@ -535,7 +712,6 @@ function generate_exchange_DH_key(_URL) {
     xhr.send(data);
 
 }
-
 function encrypt_data(_text, _password) {
     var data = _text;
     var password = _password;

@@ -11,6 +11,7 @@ html, body {
     /* font-family: Helvetica, Arial, sans-serif; */
     font-family: 'Raleway', sans-serif;
     min-height: 100vh;
+    background-color: #eeeeee;
 }
 body {
     padding-bottom: 32px;
@@ -55,7 +56,7 @@ img {
   .loader {
     position: absolute;
     margin: -18px 0 0 -18px;
-    border: 3.6px solid #666;
+    border: 3.6px solid #454545;
     -webkit-box-sizing: border-box;
             box-sizing: border-box;
     overflow: hidden;
@@ -66,15 +67,15 @@ img {
     animation: loader-spin 2s linear infinite reverse;
     -webkit-filter: url(#goo);
             filter: url(#goo);
-    -webkit-box-shadow: 0 0 0 1px #666 inset;
-            box-shadow: 0 0 0 1px #666 inset;
+    -webkit-box-shadow: 0 0 0 1px #454545 inset;
+            box-shadow: 0 0 0 1px #454545 inset;
   }
   .loader:before {
     content: "";
     position: absolute;
     -webkit-animation: loader-spin 2s cubic-bezier(0.59, 0.25, 0.4, 0.69) infinite;
             animation: loader-spin 2s cubic-bezier(0.59, 0.25, 0.4, 0.69) infinite;
-    background: #666;
+    background: #454545;
     -webkit-transform-origin: top center;
             transform-origin: top center;
     border-radius: 50%;
@@ -88,7 +89,7 @@ img {
 
 
 .loginFormOverlay {
-    position: absolute;
+    position: fixed;
     width: 100%;
     height: 100%;
     top: 0;
@@ -119,6 +120,7 @@ img {
     padding: 16px;
     font-size: 16px;
     background-color: white;
+    border-radius: 3px;
 }
 .loginFormOverlay .loginFormContainer label,
 .loginFormOverlay .loginFormContainer p {
@@ -168,8 +170,8 @@ header {
 .curUserProfileImgContainer {
     /* margin: auto; */
     /* display: inline-block; */
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     background-color: #efefef;
     /* border: 2px solid #dddddd; */
     border-radius: 10000px;
@@ -211,42 +213,47 @@ header {
     text-align: right;
 }
 .curUserFollowerInfo button {
-    padding: 10px 14px;
+    padding: 10px 18px;
     text-transform: uppercase;
     border: none;
     outline: 0;
     background-color: transparent;
     font-size: 10px;
     letter-spacing: 1px;
-    margin: 0 6px;
+    /* margin: 0 6px; */
     margin-top: 10px;
     cursor: pointer;
     color: #999999;
-    font-weight: bold;
+    /* font-weight: bold; */
 }
 .curUserFollowerInfo button:hover {
-    color: #333333;
+    color: #000000;
 }
 .curUserFollowerInfo button.active {
     border-top: 2px solid #333333;
     color: #333333;
+    font-weight: bold;
 }
 
-.users_list_container {
+.main_content_container {
     /* padding-top: 20px; */
     /* padding-bottom: 32px; */
+    /* position: relative;
+    min-height: 100vh;
+    overflow: hidden; */
 }
 .user_container {
     padding: 14px 12px;
     border: 1px solid #dddddd;
-    /* background-color: #efefef; */
+    background-color: #ffffff;
     font-size: 0px;
     margin-top: 32px;
+    border-radius: 3px;
 }
 .user_container .user_img_container {
     display: inline-block;
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     background-color: #efefef;
     border-radius: 10000px;
     overflow: hidden;
@@ -254,7 +261,7 @@ header {
 }
 .user_container .user_info_container {
     display: inline-block;
-    width: calc(100% - 150px);
+    width: calc(100% - 161px);
     /* overflow: hidden; */
     padding-left: 10px;
     vertical-align: middle;
@@ -269,7 +276,7 @@ header {
     font-size: 10px;
     color: #999999;
     padding-bottom: 2px;
-    font-weight: bold;
+    font-weight: normal;
     font-style: italic;
     letter-spacing: 1px;
 }
@@ -292,16 +299,18 @@ header {
     padding: 8px 12px;
     outline: 0;
     border: 1px solid #666666;
+    border-radius: 3px;
     color: #333333;
     letter-spacing: 1px;
 }
 .user_container .user_action_container button.user_follow_button.unfollow {
     background-color: #ffffff;
     border: 1px solid #ababab;
-    color: #666666;
+    color: #333333;
 }
 .user_container .user_action_container button.user_follow_button.unfollow:hover {
     cursor: pointer;
+    border: 1px solid #666666;
 }
 .user_container .user_action_container button.user_follow_button.unfollow:active {
     cursor: pointer;
@@ -309,16 +318,54 @@ header {
     color: #000000;
 }
 .user_container .user_action_container button.user_follow_button.follow {
-    background-color: #666666;
-    border: 1px solid #666666;
+    background-color: #787878;
+    border: 1px solid #787878;
     color: #ffffff;
 }
 .user_container .user_action_container button.user_follow_button.follow:hover {
     cursor: pointer;
+    background-color: #666666;
+    border: 1px solid #666666;
 }
 .user_container .user_action_container button.user_follow_button.follow:active {
     cursor: pointer;
     background-color: #333333;
     border: 1px solid #333333;
     color: #ffffff;
+}
+
+
+.reset_settings_container button.settings_button {
+    display: inline-block;
+    text-align: right;
+    background-color: #ffffff;
+    font-size: 12px;
+    padding: 8px 12px;
+    outline: 0;
+    border: 1px solid #666666;
+    border-radius: 3px;
+    color: #333333;
+    letter-spacing: 1px;
+    margin-top: 6px;
+    /* background-color: #ffffff; */
+    /* border: 1px solid #ababab; */
+}
+.reset_settings_container button.settings_button:hover {
+    cursor: pointer;
+    background-color: #eeeeee;
+    border: 1px solid #666666;
+}
+.reset_settings_container button.settings_button:active {
+    cursor: pointer;
+    background-color: #333333;
+    border: 1px solid #333333;
+    color: #ffffff;
+}
+.reset_settings_container p.settings_text {
+    font-size: 12px;
+    letter-spacing: 1px;
+    line-height: 1.6;
+    color: #333333;
+    margin-top: 12px;
+    margin-bottom: 2px;
 }
