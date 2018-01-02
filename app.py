@@ -122,7 +122,7 @@ def onlogin_callback(api, new_settings_file):
         json.dump(cache_settings, outfile, default=to_json)
         print('SAVED: {0!s}'.format(new_settings_file))
 
-def ig_login(username, password, _ID):
+def ig_login(username, password, _ID, new_login=False):
     registered_users_file = THIS_FOLDER_G + "/db/__rgstd__.json"
     with open(registered_users_file, 'r') as infile:
         registered_users = json.load(infile)
@@ -130,7 +130,8 @@ def ig_login(username, password, _ID):
         registered_users[username] = False
         with open(registered_users_file, 'w') as outfile:
             json.dump(registered_users, outfile, indent=2)
-        return {"status": "error", "msg": "New User."}
+        if new_login is False:
+            return {"status": "error", "msg": "New User."}
     
     device_id = None
     settings_file = THIS_FOLDER_G + "/db/data/cookies/" + username + "_" + _ID + ""
@@ -178,9 +179,9 @@ def ig_login(username, password, _ID):
 
     except ClientError as e:
         print('ClientError {0!s} (Code: {1:d}, Response: {2!s})'.format(e.msg, e.code, e.error_response))
-        if os.path.isfile(settings_file):
-            os.remove(settings_file)
-        return {"status": "error", "msg": "Invalid Username or Password."}
+        # if os.path.isfile(settings_file):
+        #     os.remove(settings_file)
+        return {"status": "error", "msg": e.msg}
 
     except Exception as e:
         print('Unexpected Exception: {0!s}'.format(e))
@@ -198,6 +199,60 @@ def ig_login(username, password, _ID):
             json.dump(registered_users, outfile, indent=2)
 
     return api
+
+
+# helper function to check for unfollowers
+def get_unfollowers(_ID, username, following, followers):
+    initial_followers = {}
+    unfollowers = {"users": []}
+
+    initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
+    if not os.path.isfile(initial_followers_file):
+        with open(initial_followers_file, 'w') as outfile:
+            json.dump(followers, outfile, indent=None)
+            print('SAVED: {0!s}'.format(initial_followers_file))
+        with open(initial_followers_file, 'r') as infile:
+            initial_followers = json.load(infile)
+            print('LOADED: {0!s}'.format(initial_followers_file))
+    else:
+        with open(initial_followers_file, 'r') as infile:
+            initial_followers = json.load(infile)
+            print('LOADED: {0!s}'.format(initial_followers_file))
+
+    new_follower_switch = False
+    for index, follower in enumerate(followers["users"]):
+        for index_2, initial_follower in enumerate(initial_followers["users"]):
+            if follower["pk"] == initial_follower["pk"]:
+                new_follower_switch = False
+                break
+            else:
+                new_follower_switch = True
+        if new_follower_switch is True:
+            initial_followers["users"].append(followers["users"][index])
+            new_follower_switch = False
+
+    unfollower_switch = False
+    for index, initial_follower in enumerate(initial_followers["users"]):
+        for index_2, follower in enumerate(followers["users"]):
+            if initial_follower["pk"] == follower["pk"]:
+                unfollower_switch = False
+                break
+            else:
+                unfollower_switch = True
+        if unfollower_switch is True:
+            unfollowers["users"].append(initial_followers["users"][index])
+            unfollower_switch = False
+
+    for index, unfollower in enumerate(unfollowers["users"]):
+        unfollowers["users"][index]["followed_by_you"] = False
+        for index_2, followed in enumerate(following["users"]):
+            if unfollower["pk"] == followed["pk"]:
+                unfollowers["users"][index]["followed_by_you"] = True
+
+    unfollowers["status"] = "ok"
+    unfollowers["users"] = sorted(unfollowers["users"], key=lambda k: k['full_name'])
+
+    return unfollowers
 
 
 """
@@ -265,7 +320,7 @@ def login():
     except:
         return jsonify({"status": "error", "msg": "Encryption Error."})
 
-    api = ig_login(username, password, _ID)
+    api = ig_login(username, password, _ID, new_login=True)
 
     if isinstance(api, dict) and "status" in api and api["status"] == "error":
         return jsonify(api)
@@ -295,6 +350,40 @@ def login():
         
         with open(IDS_PATH, 'w') as outfile:
             json.dump(ID_ENTRIES, outfile, indent=2)
+
+        return jsonify(current_user)
+
+
+@app.route('/getcurrentuser', methods=["POST"])
+def getcurrentuser():
+    _ID = request.form.get('_ID')
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    try:
+        SEC_KEY = get_SEC_KEY(_ID)
+        if SEC_KEY == "Not Found":
+            return jsonify({"status": "error", "msg": "Secret Key Not Found"})
+
+        password = decrypt_data(password, SEC_KEY)
+    except:
+        return jsonify({"status": "error", "msg": "Encryption Error."})
+
+    api = ig_login(username, password, _ID)
+
+    if isinstance(api, dict) and "status" in api and api["status"] == "error":
+        return jsonify(api)
+    else:
+        user_id = api.authenticated_user_id
+        current_user = api.current_user()
+
+        followers = api.user_followers(user_id)
+        following = api.user_following(user_id)
+        unfollowers = get_unfollowers(_ID, username, following, followers)
+
+        current_user["user"]["following_count"] = len(following["users"])
+        current_user["user"]["followers_count"] = len(followers["users"])
+        current_user["user"]["unfollowers_count"] = len(unfollowers["users"])
 
         return jsonify(current_user)
 
@@ -394,54 +483,7 @@ def unfollowers():
         followers = api.user_followers(user_id)
         following = api.user_following(user_id)
 
-        initial_followers = {}
-        unfollowers = {"users": []}
-
-        initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
-        if not os.path.isfile(initial_followers_file):
-            with open(initial_followers_file, 'w') as outfile:
-                json.dump(followers, outfile, indent=None)
-                print('SAVED: {0!s}'.format(initial_followers_file))
-            with open(initial_followers_file, 'r') as infile:
-                initial_followers = json.load(infile)
-                print('LOADED: {0!s}'.format(initial_followers_file))
-        else:
-            with open(initial_followers_file, 'r') as infile:
-                initial_followers = json.load(infile)
-                print('LOADED: {0!s}'.format(initial_followers_file))
-
-        new_follower_switch = False
-        for index, follower in enumerate(followers["users"]):
-            for index_2, initial_follower in enumerate(initial_followers["users"]):
-                if follower["pk"] == initial_follower["pk"]:
-                    new_follower_switch = False
-                    break
-                else:
-                    new_follower_switch = True
-            if new_follower_switch == True:
-                initial_followers["users"].append(followers["users"][index])
-                new_follower_switch = False
-
-        unfollower_switch = False
-        for index, initial_follower in enumerate(initial_followers["users"]):
-            for index_2, follower in enumerate(followers["users"]):
-                if initial_follower["pk"] == follower["pk"]:
-                    unfollower_switch = False
-                    break
-                else:
-                    unfollower_switch = True
-            if unfollower_switch == True:
-                unfollowers["users"].append(initial_followers["users"][index])
-                unfollower_switch = False
-
-        for index, unfollower in enumerate(unfollowers["users"]):
-            unfollowers["users"][index]["followed_by_you"] = False
-            for index_2, followed in enumerate(following["users"]):
-                if unfollower["pk"] == followed["pk"]:
-                    unfollowers["users"][index]["followed_by_you"] = True
-
-        unfollowers["status"] = "ok"
-        unfollowers["users"] = sorted(unfollowers["users"], key=lambda k: k['full_name'])
+        unfollowers = get_unfollowers(_ID, username, following, followers)
 
         return jsonify(unfollowers)
 
@@ -610,7 +652,7 @@ def completelogout():
 
 
 
-# __TODO__ Add a damn database. The file storage is too messy. -me
+# __TODO__ replace static json file storage with a database.
 
 
 ### Run Flask App

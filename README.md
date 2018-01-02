@@ -48,6 +48,11 @@ python app.py
 
 > receives `username`, `password` and `_ID`(client specific id) variables in formdata.
 
+##### `domain.name/getcurrentuser`
+> get currently logged in user's data.
+
+> receives `username`, `password` and `_ID`(client specific id) variables in formdata.
+
 ##### `domain.name/followers`
 > get followers list
 

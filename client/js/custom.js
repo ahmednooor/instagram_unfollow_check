@@ -3,6 +3,7 @@ var REST_Endpoints = {
     establishencryption: "http://127.0.0.1:5000/establishencryption",
     confirmkeyexchange: "http://127.0.0.1:5000/confirmkeyexchange",
     login: "http://127.0.0.1:5000/login",
+    getcurrentuser: "http://127.0.0.1:5000/getcurrentuser",
     followers: "http://127.0.0.1:5000/followers",
     unfollowers: "http://127.0.0.1:5000/unfollowers",
     following: "http://127.0.0.1:5000/following",
@@ -435,11 +436,20 @@ function fillCurrentUserProfile() {
     var curUserProfileImg = document.getElementById("curUserProfileImg");
     var curUserFullName = document.getElementById("curUserFullName");
     var curUserUsername = document.getElementById("curUserUsername");
+    
+    var followingInfoButton = document.getElementById("followingInfoButton");
+    var followersInfoButton = document.getElementById("followersInfoButton");
+    var unfollowersInfoButton = document.getElementById("unfollowersInfoButton");
+    
     var Cur_User_Data = JSON.parse(localStorage.getItem("_CURRENT_USER"));
 
     curUserProfileImg.src = Cur_User_Data.profile_pic_url;
     curUserFullName.innerHTML = `<a href="index.html">${Cur_User_Data.full_name}</a>`;
     curUserUsername.innerText = Cur_User_Data.username;
+
+    followingInfoButton.innerText = "Following (" + Cur_User_Data.following_count + ")";
+    followersInfoButton.innerText = "Followers (" + Cur_User_Data.followers_count + ")";
+    unfollowersInfoButton.innerText = "Unfollowers (" + Cur_User_Data.unfollowers_count + ")";
 }
 
 function updateCurrentUser() {
@@ -450,7 +460,7 @@ function updateCurrentUser() {
     
     var xhr = new XMLHttpRequest();
     
-    xhr.open('POST', REST_Endpoints.login, true);
+    xhr.open('POST', REST_Endpoints.getcurrentuser, true);
     xhr.onload = function () {
         var response = JSON.parse(this.responseText);
         
@@ -704,10 +714,8 @@ function generate_exchange_DH_key(_URL) {
         var ya = y.pow(_A).mod(_N);
         SEC_KEY = ya.toString(10);
         
-        if (!localStorage.getItem("_ID") || !localStorage.getItem("SEC_KEY")) {
-            localStorage.setItem("_ID", _ID);
-            localStorage.setItem("SEC_KEY", SEC_KEY);
-        }
+        localStorage.setItem("_ID", _ID);
+        localStorage.setItem("SEC_KEY", SEC_KEY);
     };
     xhr.send(data);
 
