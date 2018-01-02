@@ -1,19 +1,29 @@
 # Instagram Unfollowers
-> Find when someone unfollows you on instagram. Make only meaningful connections instead of fake followers.
 
-> An app to check on instagram, who unfollowed you, your followers, your followings, who is not following back.
+Find when someone unfollows you on instagram. Make only meaningful connections instead of fake followers.
+
+An app to check on instagram, who unfollowed you, your followers, your followings, who is not following back.
 
 ## Install
-> Clone this repo.
 
-> Execute `pip install -r requirements.txt` in root directory of cloned repo to install dependencies.
-
-> You will need to have installed `Microsoft Visual C++ Build Tools ^14.x` on Windows for `pycryptodome` to install.
+- Clone this repo.
+- Execute `pip install -r requirements.txt` in root directory of cloned repo to install dependencies.
+- You will need to have installed `Microsoft Visual C++ Build Tools ^14.x` on Windows for `pycryptodome` to install.
 
 ## Run
-> `python app.py`
+
+#### Manually 
+
+```
+python app.py
+```
+
+#### Via Docker
+
+ ....
 
 ## Client Server Communication
+
 * All requests from client should be sent in POST method.
 * At the first instance of client, the client should send relevant variables of Diffie-Hellman Method and a unique id (e.g. uuid) to `domain.name/establishencryption`. The server will create DH key and store it with the reference of unique id received from client. It will then send the relevant variable of DH method to client so that client can create and store the key as well. See `establishencryption` function in `app.py` and `generate_exchange_DH_key` function in `client/js/custom.js` to get the idea.
 * The client should send its unique id created in first instance to `domain.name/confirmkeyexchange` to confirm that server has stored the key.
@@ -22,6 +32,7 @@
 * A web based client example is in `client` directory. See `client/js/custom.js` to get the idea.
 
 ## Endpoints
+
 ##### `domain.name/establishencryption`
 > exchange secret key via Diffie-Hellman Method.
 
