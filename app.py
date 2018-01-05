@@ -1,6 +1,7 @@
-### Imports
+# --- Imports
 from flask import Flask, redirect, render_template, request, session, url_for, jsonify, g
 from flask_compress import Compress
+from flask_sqlalchemy import SQLAlchemy
 import os
 import os.path
 import sys
@@ -27,15 +28,13 @@ except ImportError:
         __version__ as client_version)
 
 
-
-### configure flask
+# --- configure flask
 app = Flask(__name__)
 Compress(app)
 
 app.secret_key = uuid.uuid4().hex
 
-
-### configure root directory path relative to this file
+# --- configure root directory path relative to this file
 THIS_FOLDER_G = ""
 if getattr(sys, 'frozen', False):
     # frozen
@@ -45,7 +44,38 @@ else:
     THIS_FOLDER_G = os.path.dirname(os.path.realpath(__file__))
 
 
-# --- helper function to decrypt data
+# --- configure database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + THIS_FOLDER_G + '/db/db.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+db = SQLAlchemy(app)
+
+
+"""
+    Models
+"""
+class Keys(db.Model):
+    _id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.String(200), unique=True, nullable=False)
+    sec_key = db.Column(db.String(200), unique=True, nullable=False)
+
+    def __repr__(self):
+        return '<Keys %r>' % self.client_id
+
+
+class Users(db.Model):
+    _id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(200), unique=True, nullable=False)
+    client_id_list = db.Column(db.Text, unique=False, nullable=False)
+    is_active = db.Column(db.Boolean, unique=False, nullable=True)
+    initial_followers = db.Column(db.Text, unique=False, nullable=True)
+
+    def __repr__(self):
+        return '<Users %r>' % self.username
+
+
+"""
+    Helper functions to decrypt data
+"""
 def decrypt_data(ciphered_text, _password):
     """https://stackoverflow.com/questions/36762098/how-to-decrypt-password-from-javascript-cryptojs-aes-encryptpassword-passphras"""
     BLOCK_SIZE = 16
@@ -92,12 +122,10 @@ def decrypt_data(ciphered_text, _password):
 
 
 def get_SEC_KEY(_ID):
-    DB_PATH = THIS_FOLDER_G + "/db/__keys__.json"
-    with open(DB_PATH, 'r') as infile:
-        DB_ENTRIES = json.load(infile)
+    key_obj = Keys.query.filter_by(client_id=_ID).first()
     
-    if _ID in DB_ENTRIES:
-        SEC_KEY = DB_ENTRIES[_ID]
+    if key_obj is not None and _ID == key_obj.client_id:
+        SEC_KEY = key_obj.sec_key
     else:
         SEC_KEY = "Not Found"
     
@@ -123,14 +151,9 @@ def onlogin_callback(api, new_settings_file):
         print('SAVED: {0!s}'.format(new_settings_file))
 
 def ig_login(username, password, _ID, new_login=False):
-    registered_users_file = THIS_FOLDER_G + "/db/__rgstd__.json"
-    with open(registered_users_file, 'r') as infile:
-        registered_users = json.load(infile)
-    if username not in registered_users:
-        registered_users[username] = False
-        with open(registered_users_file, 'w') as outfile:
-            json.dump(registered_users, outfile, indent=2)
-        if new_login is False:
+    if new_login is False:
+        user_db = Users.query.filter_by(username=username).first()
+        if user_db is None:
             return {"status": "error", "msg": "New User."}
     
     device_id = None
@@ -190,13 +213,7 @@ def ig_login(username, password, _ID, new_login=False):
     # Show when login expires
     cookie_expiry = api.cookie_jar.expires_earliest
     print('Cookie Expiry: {0!s}'.format(datetime.datetime.fromtimestamp(cookie_expiry).strftime('%Y-%m-%dT%H:%M:%SZ')))
-
     print('All ok')
-
-    if registered_users[username] == False:
-        registered_users[username] = True
-        with open(registered_users_file, 'w') as outfile:
-            json.dump(registered_users, outfile, indent=2)
 
     return api
 
@@ -206,18 +223,9 @@ def get_unfollowers(_ID, username, following, followers):
     initial_followers = {}
     unfollowers = {"users": []}
 
-    initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
-    if not os.path.isfile(initial_followers_file):
-        with open(initial_followers_file, 'w') as outfile:
-            json.dump(followers, outfile, indent=None)
-            print('SAVED: {0!s}'.format(initial_followers_file))
-        with open(initial_followers_file, 'r') as infile:
-            initial_followers = json.load(infile)
-            print('LOADED: {0!s}'.format(initial_followers_file))
-    else:
-        with open(initial_followers_file, 'r') as infile:
-            initial_followers = json.load(infile)
-            print('LOADED: {0!s}'.format(initial_followers_file))
+    user_db = Users.query.filter_by(username=username).first()
+    if user_db is not None:
+        initial_followers = json.loads(user_db.initial_followers)
 
     new_follower_switch = False
     for index, follower in enumerate(followers["users"]):
@@ -230,6 +238,10 @@ def get_unfollowers(_ID, username, following, followers):
         if new_follower_switch is True:
             initial_followers["users"].append(followers["users"][index])
             new_follower_switch = False
+
+    if user_db is not None:
+        user_db.initial_followers = json.dumps(initial_followers)
+        db.session.commit()
 
     unfollower_switch = False
     for index, initial_follower in enumerate(initial_followers["users"]):
@@ -258,7 +270,6 @@ def get_unfollowers(_ID, username, following, followers):
 """
     ENDPOINTS
 """
-
 @app.route('/establishencryption', methods=["POST"])
 def establishencryption():
     global THIS_FOLDER_G
@@ -275,16 +286,9 @@ def establishencryption():
         
         SEC_KEY = xb
 
-        DB_ENTRY = {_ID: SEC_KEY}
-        DB_PATH = THIS_FOLDER_G + "/db/__keys__.json"
-        
-        with open(DB_PATH, 'r') as infile:
-            DB_ENTRIES = json.load(infile)
-        
-        DB_ENTRIES[_ID] = str(SEC_KEY)
-        
-        with open(DB_PATH, 'w') as outfile:
-            json.dump(DB_ENTRIES, outfile, indent=2)
+        new_key = Keys(client_id=_ID, sec_key=str(SEC_KEY))
+        db.session.add(new_key)
+        db.session.commit()
 
         return jsonify({"status": "ok", "y": str(_Y)})
 
@@ -329,27 +333,18 @@ def login():
         current_user = api.current_user()
 
         followers = api.user_followers(user_id)
-        initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
-        if not os.path.isfile(initial_followers_file):
-            with open(initial_followers_file, 'w') as outfile:
-                json.dump(followers, outfile, indent=None)
-                print('SAVED: {0!s}'.format(initial_followers_file))
+
+        user_db = Users.query.filter_by(username=username).first()
+        if user_db is None:
+            new_user = Users(username=username, client_id_list=_ID, is_active=True, initial_followers=json.dumps(followers))
+            db.session.add(new_user)
+            db.session.commit()
         else:
-            pass
-        
-        IDS_PATH = THIS_FOLDER_G + "/db/__ids__.json"
-        with open(IDS_PATH, 'r') as infile:
-            ID_ENTRIES = json.load(infile)
-        
-        if username in ID_ENTRIES:
-            if _ID not in ID_ENTRIES[username]:
-                ID_ENTRIES[username].append(_ID)
-        else:
-            ID_ENTRIES[username] = []
-            ID_ENTRIES[username].append(_ID)
-        
-        with open(IDS_PATH, 'w') as outfile:
-            json.dump(ID_ENTRIES, outfile, indent=2)
+            client_id_list = user_db.client_id_list.split(",")
+            if _ID not in client_id_list:
+                client_id_list.append(_ID)
+            user_db.client_id_list = (",").join(client_id_list)
+            db.session.commit()
 
         return jsonify(current_user)
 
@@ -567,10 +562,11 @@ def reset():
         user_id = api.authenticated_user_id
 
         followers = api.user_followers(user_id)
-        initial_followers_file = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
-        with open(initial_followers_file, 'w') as outfile:
-            json.dump(followers, outfile, indent=None)
-            print('SAVED: {0!s}'.format(initial_followers_file))
+
+        user_db = Users.query.filter_by(username=username).first()
+        if user_db is not None:
+            user_db.initial_followers = json.dumps(followers)
+            db.session.commit()
 
         return jsonify({"status": "ok", "msg": "Reset Successful."})
 
@@ -599,6 +595,21 @@ def logout():
         if os.path.isfile(settings_file):
             os.remove(settings_file)
 
+        client_id_list = []
+        user_db = Users.query.filter_by(username=username).first()
+        if user_db is not None:
+            client_id_list = user_db.client_id_list.split(",")
+            for index, _id_ in enumerate(client_id_list):
+                if _id_ == _ID:
+                    client_id_list.pop(index)
+            user_db.client_id_list = (",").join(client_id_list)
+            db.session.commit()
+        
+        keys_db = Keys.query.filter_by(client_id=_ID).first()
+        if keys_db is not None:
+            db.session.delete(keys_db)
+            db.session.commit()
+
         return jsonify({"status": "ok", "msg": "Logout Successful."})
 
 
@@ -622,39 +633,31 @@ def completelogout():
     if isinstance(api, dict) and "status" in api and api["status"] == "error":
         return jsonify(api)
     else:
-        IDS_PATH = THIS_FOLDER_G + "/db/__ids__.json"
-        with open(IDS_PATH, 'r') as infile:
-            ID_ENTRIES = json.load(infile)
+        client_id_list = []
+        user_db = Users.query.filter_by(username=username).first()
+        if user_db is not None:
+            client_id_list = user_db.client_id_list.split(",")
+            if _ID in client_id_list:
+                for _id_ in client_id_list:
+                    settings_file = THIS_FOLDER_G + "/db/data/cookies/" + username + "_" + _id_ + ""
+                    if os.path.isfile(settings_file):
+                        os.remove(settings_file)
+                    
+                    keys_db = Keys.query.filter_by(client_id=_id_).first()
+                    if keys_db is not None:
+                        db.session.delete(keys_db)
+                        db.session.commit()
 
-        for _id_ in ID_ENTRIES[username]:
-            settings_file = THIS_FOLDER_G + "/db/data/cookies/" + username + "_" + _id_ + ""
-            if os.path.isfile(settings_file):
-                os.remove(settings_file)
-
-        initial_followers_list = THIS_FOLDER_G + "/db/data/initial_followers/" + username + ".json"
-        if os.path.isfile(initial_followers_list):
-            os.remove(initial_followers_list)
-
-        del ID_ENTRIES[username]
-
-        with open(IDS_PATH, 'w') as outfile:
-            json.dump(ID_ENTRIES, outfile, indent=2)
-        
-        registered_users_file = THIS_FOLDER_G + "/db/__rgstd__.json"
-        with open(registered_users_file, 'r') as infile:
-            registered_users = json.load(infile)
-        if username in registered_users:
-            del registered_users[username]
-            with open(registered_users_file, 'w') as outfile:
-                json.dump(registered_users, outfile, indent=2)
-
-        return jsonify({"status": "ok", "msg": "Complete Logout Successful."})
+                db.session.delete(user_db)
+                db.session.commit()
+                return jsonify({"status": "ok", "msg": "Complete Logout Successful."})
+            else:
+                return jsonify({"status": "error", "msg": "Device ID ot registered with username."})
+        else:
+            return jsonify({"status": "error", "msg": "User not found."})
 
 
-
-# __TODO__ replace static json file storage with a database.
-
-
-### Run Flask App
+# --- Run Flask App
 if __name__ == "__main__":
+    db.create_all()
     app.run(debug=True)

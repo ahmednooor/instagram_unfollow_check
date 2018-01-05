@@ -93,9 +93,6 @@ python app.py
 
 > receives `username`, `password`, and `_ID`(client specific id) variables in formdata.
 
-##### TODO
-> replace static json file storage with a database.
-
 ---
 ## References/Credits
 ##### `instagram private api link`

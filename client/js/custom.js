@@ -331,7 +331,7 @@ function fillUserFollowers(followers) {
 }
 
 function getFollowers() {
-    clearUserListsSections()
+    clearUserListsSections();
     var followersListContainer = document.getElementById("followersListContainer");
     followersListContainer.style.display = "";
     appendLoader("followersListContainer");
@@ -396,7 +396,7 @@ function fillUserFollowing(following) {
 }
 
 function getFollowing() {
-    clearUserListsSections()
+    clearUserListsSections();
     var followingListContainer = document.getElementById("followingListContainer");
     followingListContainer.style.display = "";
     appendLoader("followingListContainer");
@@ -485,6 +485,9 @@ function updateCurrentUser() {
 }
 
 function unfollowUser(other_user_id){
+    var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
+    button.innerText = "...";
+    
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
@@ -499,8 +502,8 @@ function unfollowUser(other_user_id){
         
         if (response.status != "ok") {
             // askForLogin();
+            button.innerText = "Unfollow";
         } else {
-            var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
             button.classList.remove("unfollow");
             button.classList.add("follow");
             button.innerText = "Follow";
@@ -511,6 +514,9 @@ function unfollowUser(other_user_id){
 }
 
 function followUser(other_user_id){
+    var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
+    button.innerText = "...";
+
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
@@ -525,8 +531,8 @@ function followUser(other_user_id){
         
         if (response.status != "ok") {
             // askForLogin();
+            button.innerText = "Follow";
         } else {
-            var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
             button.classList.remove("follow");
             button.classList.add("unfollow");
             button.innerText = "Unfollow";
@@ -564,6 +570,7 @@ function askForLogin() {
     var login_submit_button = document.getElementById("login_submit_button");
     
     login_submit_button.onclick = function() {
+        login_submit_button.innerText = "...";
 
         var login_username = document.getElementById("login_username").value;
         var login_password = document.getElementById("login_password").value;
@@ -578,6 +585,7 @@ function askForLogin() {
         
         xhr.open('POST', REST_Endpoints.login, true);
         xhr.onload = function () {
+            login_submit_button.innerText = "Login";
             var response = JSON.parse(this.responseText);
             if (response.status != "ok") {
                 document.getElementById("loginFormStatus").innerHTML = response.msg;
