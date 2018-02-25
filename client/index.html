@@ -13,11 +13,18 @@
     
     <script src="js/BigInteger.min.js"></script>
     <script src="js/aes.js"></script>
-    <script src="js/custom.js"></script>
-    <!-- <script src="js/custom_es5.js"></script> -->
+    <!-- <script src="js/custom.js"></script> -->
+    <script src="js/custom_es5.js"></script>
 </head>
 <body>
     
+<div id="loaderMainOverlay" class="loginFormOverlay" style="display:block;">
+    <div class="container">
+        <div class="row">
+            <div class="loader"><svg><defs><filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur" /><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 4 -2" result="gooey" /><feComposite in="SourceGraphic" in2="gooey" operator="atop"/></filter></defs></svg></div>
+        </div>
+    </div>
+</div>
 <div id="loginFormOverlay" class="loginFormOverlay">
     <div class="loginFormContainer">
         <label>Username:</label>
@@ -33,18 +40,18 @@
 <header class="container-fluid">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-3 col-sm-1">
+            <div class="col-2 col-md-1">
                 <div class="curUserProfileImgContainer" id="curUserProfileImgContainer">
                     <a href="index.html"><img id="curUserProfileImg" src="" alt=""></a>
                 </div>
             </div>
-            <div class="col-9 col-sm-3">
+            <div class="col-10 col-md-3">
                 <div class="curUserInfoContainer" id="curUserInfoContainer">
                     <p class="full_name" id="curUserFullName"></p>
                     <p class="username" id="curUserUsername"></p>
                 </div>
             </div>
-            <div class="col-12 col-sm-8">
+            <div class="col-12 col-md-8">
                 <div class="curUserFollowerInfo" id="curUserFollowerInfo">
                     <button id="followingInfoButton" class="active">Following</button>
                     <button id="followersInfoButton">Followers</button>

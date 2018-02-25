@@ -2,6 +2,7 @@ var REST_Endpoints = {
     establishencryption: "http://127.0.0.1:5000/establishencryption",
     confirmkeyexchange: "http://127.0.0.1:5000/confirmkeyexchange",
     login: "http://127.0.0.1:5000/login",
+    getcurrentuser: "http://127.0.0.1:5000/getcurrentuser",
     followers: "http://127.0.0.1:5000/followers",
     unfollowers: "http://127.0.0.1:5000/unfollowers",
     following: "http://127.0.0.1:5000/following",
@@ -129,6 +130,8 @@ function loadSettings() {
                     localStorage.removeItem("_USERNAME");
                     localStorage.removeItem("_PASSWORD");
                     localStorage.removeItem("_CURRENT_USER");
+                    localStorage.removeItem("_ID");
+                    localStorage.removeItem("SEC_KEY");
                     window.location.reload(true);
                 }
                 if (response.msg == "Invalid Username or Password.") {
@@ -139,6 +142,8 @@ function loadSettings() {
                 localStorage.removeItem("_USERNAME");
                 localStorage.removeItem("_PASSWORD");
                 localStorage.removeItem("_CURRENT_USER");
+                localStorage.removeItem("_ID");
+                localStorage.removeItem("SEC_KEY");
                 window.location.reload(true);
             }
         };
@@ -165,6 +170,8 @@ function loadSettings() {
                     localStorage.removeItem("_USERNAME");
                     localStorage.removeItem("_PASSWORD");
                     localStorage.removeItem("_CURRENT_USER");
+                    localStorage.removeItem("_ID");
+                    localStorage.removeItem("SEC_KEY");
                     window.location.reload(true);
                 }
                 if (response.msg == "Invalid Username or Password.") {
@@ -175,6 +182,8 @@ function loadSettings() {
                 localStorage.removeItem("_USERNAME");
                 localStorage.removeItem("_PASSWORD");
                 localStorage.removeItem("_CURRENT_USER");
+                localStorage.removeItem("_ID");
+                localStorage.removeItem("SEC_KEY");
                 window.location.reload(true);
             }
         };
@@ -354,11 +363,20 @@ function fillCurrentUserProfile() {
     var curUserProfileImg = document.getElementById("curUserProfileImg");
     var curUserFullName = document.getElementById("curUserFullName");
     var curUserUsername = document.getElementById("curUserUsername");
+
+    var followingInfoButton = document.getElementById("followingInfoButton");
+    var followersInfoButton = document.getElementById("followersInfoButton");
+    var unfollowersInfoButton = document.getElementById("unfollowersInfoButton");
+
     var Cur_User_Data = JSON.parse(localStorage.getItem("_CURRENT_USER"));
 
     curUserProfileImg.src = Cur_User_Data.profile_pic_url;
     curUserFullName.innerHTML = "<a href=\"index.html\">" + Cur_User_Data.full_name + "</a>";
     curUserUsername.innerText = Cur_User_Data.username;
+
+    followingInfoButton.innerText = "Following (" + Cur_User_Data.following_count + ")";
+    followersInfoButton.innerText = "Followers (" + Cur_User_Data.followers_count + ")";
+    unfollowersInfoButton.innerText = "Unfollowers (" + Cur_User_Data.unfollowers_count + ")";
 }
 
 function updateCurrentUser() {
@@ -367,10 +385,15 @@ function updateCurrentUser() {
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
 
+    var loaderMainOverlay = document.getElementById("loaderMainOverlay");
+    loaderMainOverlay.style.display = "block";
+
     var xhr = new XMLHttpRequest();
 
-    xhr.open('POST', REST_Endpoints.login, true);
+    xhr.open('POST', REST_Endpoints.getcurrentuser, true);
     xhr.onload = function () {
+        loaderMainOverlay.style.display = "";
+
         var response = JSON.parse(this.responseText);
 
         if (response.status != "ok") {
@@ -394,6 +417,9 @@ function updateCurrentUser() {
 }
 
 function unfollowUser(other_user_id) {
+    var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
+    button.innerText = "...";
+
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
@@ -408,8 +434,8 @@ function unfollowUser(other_user_id) {
 
         if (response.status != "ok") {
             // askForLogin();
+            button.innerText = "Unfollow";
         } else {
-            var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
             button.classList.remove("unfollow");
             button.classList.add("follow");
             button.innerText = "Follow";
@@ -420,6 +446,9 @@ function unfollowUser(other_user_id) {
 }
 
 function followUser(other_user_id) {
+    var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
+    button.innerText = "...";
+
     var data = new FormData();
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
@@ -434,8 +463,8 @@ function followUser(other_user_id) {
 
         if (response.status != "ok") {
             // askForLogin();
+            button.innerText = "Follow";
         } else {
-            var button = document.getElementById(other_user_id).getElementsByClassName("user_follow_button")[0];
             button.classList.remove("follow");
             button.classList.add("unfollow");
             button.innerText = "Unfollow";
@@ -462,6 +491,7 @@ function askForLogin() {
     var login_submit_button = document.getElementById("login_submit_button");
 
     login_submit_button.onclick = function () {
+        login_submit_button.innerText = "...";
 
         var login_username = document.getElementById("login_username").value;
         var login_password = document.getElementById("login_password").value;
@@ -476,6 +506,7 @@ function askForLogin() {
 
         xhr.open('POST', REST_Endpoints.login, true);
         xhr.onload = function () {
+            login_submit_button.innerText = "Login";
             var response = JSON.parse(this.responseText);
             if (response.status != "ok") {
                 document.getElementById("loginFormStatus").innerHTML = response.msg;
@@ -604,10 +635,8 @@ function generate_exchange_DH_key(_URL) {
         var ya = y.pow(_A).mod(_N);
         SEC_KEY = ya.toString(10);
 
-        if (!localStorage.getItem("_ID") || !localStorage.getItem("SEC_KEY")) {
-            localStorage.setItem("_ID", _ID);
-            localStorage.setItem("SEC_KEY", SEC_KEY);
-        }
+        localStorage.setItem("_ID", _ID);
+        localStorage.setItem("SEC_KEY", SEC_KEY);
     };
     xhr.send(data);
 }

@@ -167,6 +167,7 @@ header {
     border-bottom: 1px solid #dddddd;
     /* box-shadow: 0 2px 16px rgba(0,0,0,0.1); */
 }
+
 .curUserProfileImgContainer {
     /* margin: auto; */
     /* display: inline-block; */
@@ -302,6 +303,9 @@ header {
     border-radius: 3px;
     color: #333333;
     letter-spacing: 1px;
+    display: block;
+    width: 100%;
+    text-align: center;
 }
 .user_container .user_action_container button.user_follow_button.unfollow {
     background-color: #ffffff;
@@ -368,4 +372,20 @@ header {
     color: #333333;
     margin-top: 12px;
     margin-bottom: 2px;
+}
+
+@media only screen and (max-width: 991px) {
+    .curUserInfoContainer {
+        margin-left: 25px;
+    }
+    .curUserFollowerInfo {
+        text-align: left;
+    }
+}
+
+@media only screen and (max-width: 575px) {
+    header .container {
+        padding: 0 !important;
+    }
+
 }

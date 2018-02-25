@@ -166,6 +166,8 @@ function loadSettings() {
                     localStorage.removeItem("_USERNAME");
                     localStorage.removeItem("_PASSWORD");
                     localStorage.removeItem("_CURRENT_USER");
+                    localStorage.removeItem("_ID");
+                    localStorage.removeItem("SEC_KEY");
                     window.location.reload(true);
                 }
                 if (response.msg == "Invalid Username or Password.") {
@@ -176,6 +178,8 @@ function loadSettings() {
                 localStorage.removeItem("_USERNAME");
                 localStorage.removeItem("_PASSWORD");
                 localStorage.removeItem("_CURRENT_USER");
+                localStorage.removeItem("_ID");
+                localStorage.removeItem("SEC_KEY");
                 window.location.reload(true);
             }
         };
@@ -202,6 +206,8 @@ function loadSettings() {
                     localStorage.removeItem("_USERNAME");
                     localStorage.removeItem("_PASSWORD");
                     localStorage.removeItem("_CURRENT_USER");
+                    localStorage.removeItem("_ID");
+                    localStorage.removeItem("SEC_KEY");
                     window.location.reload(true);
                 }
                 if (response.msg == "Invalid Username or Password.") {
@@ -212,6 +218,8 @@ function loadSettings() {
                 localStorage.removeItem("_USERNAME");
                 localStorage.removeItem("_PASSWORD");
                 localStorage.removeItem("_CURRENT_USER");
+                localStorage.removeItem("_ID");
+                localStorage.removeItem("SEC_KEY");
                 window.location.reload(true);
             }
         };
@@ -457,11 +465,16 @@ function updateCurrentUser() {
     data.append('username', localStorage.getItem("_USERNAME"));
     data.append('password', localStorage.getItem("_PASSWORD"));
     data.append('_ID', localStorage.getItem("_ID"));
+
+    var loaderMainOverlay = document.getElementById("loaderMainOverlay");
+    loaderMainOverlay.style.display = "block";
     
     var xhr = new XMLHttpRequest();
     
     xhr.open('POST', REST_Endpoints.getcurrentuser, true);
     xhr.onload = function () {
+        loaderMainOverlay.style.display = "";
+        
         var response = JSON.parse(this.responseText);
         
         if (response.status != "ok") {
