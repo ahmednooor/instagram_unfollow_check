@@ -14,6 +14,7 @@ from random import randint
 from Crypto import Random
 from Crypto.Cipher import AES
 from hashlib import md5
+from flask_cors import CORS
 
 try:
     from instagram_private_api import (
@@ -30,9 +31,10 @@ except ImportError:
 
 # --- configure flask
 app = Flask(__name__)
-Compress(app)
-
 app.secret_key = uuid.uuid4().hex
+
+Compress(app)
+CORS(app)
 
 # --- configure root directory path relative to this file
 THIS_FOLDER_G = ""
